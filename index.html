@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Observatorio Climático Digital — Venezuela y Latinoamérica</title>
+  <meta name="description" content="Observatorio climático gratuito con pronóstico 14 días, detalle horario, calidad del aire y datos históricos." />
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <style>
+    :root {
+      --primary: #0d6efd;
+      --primary-dark: #0a58ca;
+      --bg: #f0f2f5;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --muted: #6c757d;
+      --border: #e5e7eb;
+      --shadow: 0 2px 12px rgba(0,0,0,0.08);
+      --radius: 14px;
+      --green: #198754;
+      --orange: #fd7e14;
+      --red: #dc3545;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      min-height: 100vh;
+    }
+    .header {
+      background: linear-gradient(135deg, #0d6efd 0%, #084298 100%);
+      color: #fff;
+      padding: 1rem 1.25rem;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+    .header-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+    }
+    .brand h1 { font-size: 1.35rem; font-weight: 700; }
+    .brand .sub { font-size: 0.8rem; opacity: 0.9; }
+    .search-box { display: flex; gap: 0.4rem; flex: 1; max-width: 380px; }
+    .search-box input {
+      flex: 1; padding: 0.55rem 0.9rem; border: none; border-radius: 8px;
+      font-size: 0.95rem; outline: none;
+    }
+    .search-box button {
+      background: #fff; color: var(--primary); border: none;
+      padding: 0.55rem 1rem; border-radius: 8px; font-weight: 600; cursor: pointer;
+    }
+    .search-box button:hover { background: #e9ecef; }
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 1.25rem;
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 1.25rem;
+    }
+    @media (max-width: 960px) {
+      .container { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.1rem 1.2rem;
+    }
+    .card h2, .card h3 {
+      font-size: 1rem;
+      font-weight: 650;
+      margin-bottom: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .map-card { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+    .map-header {
+      padding: 0.85rem 1.1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fafbfc;
+    }
+    .map-header h2 { margin: 0; font-size: 0.95rem; }
+    #location-label { font-size: 0.85rem; color: var(--muted); }
+    #map { height: 340px; width: 100%; }
+    .current-main {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .temp-big {
+      font-size: 3.2rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--primary);
+    }
+    .temp-unit { font-size: 1.4rem; font-weight: 500; }
+    .current-desc { font-size: 1.1rem; font-weight: 500; margin-bottom: 0.25rem; }
+    .feels-like { font-size: 0.9rem; color: var(--muted); }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.6rem;
+    }
+    @media (max-width: 480px) {
+      .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .metric {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 0.65rem 0.5rem;
+      text-align: center;
+    }
+    .metric-val { font-size: 1.05rem; font-weight: 650; }
+    .metric-lbl { font-size: 0.72rem; color: var(--muted); margin-top: 0.15rem; }
+    .hourly-scroll {
+      display: flex;
+      gap: 0.6rem;
+      overflow-x: auto;
+      padding-bottom: 0.4rem;
+      scrollbar-width: thin;
+    }
+    .hour-card {
+      flex: 0 0 72px;
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 0.6rem 0.4rem;
+      text-align: center;
+      font-size: 0.8rem;
+    }
+    .hour-card .h-time { font-weight: 600; margin-bottom: 0.25rem; }
+    .hour-card .h-icon { font-size: 1.35rem; margin: 0.2rem 0; }
+    .hour-card .h-temp { font-weight: 650; }
+    .hour-card .h-precip { font-size: 0.7rem; color: #3498db; margin-top: 0.15rem; }
+    .daily-list { display: flex; flex-direction: column; gap: 0.45rem; }
+    .day-row {
+      display: grid;
+      grid-template-columns: 90px 36px 1fr 70px 55px;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 0.6rem;
+      background: #f8f9fa;
+      border-radius: 9px;
+      font-size: 0.88rem;
+    }
+    .day-name { font-weight: 550; text-transform: capitalize; }
+    .day-icon { font-size: 1.25rem; text-align: center; }
+    .day-temps { display: flex; gap: 0.5rem; }
+    .day-temps .max { font-weight: 700; color: #e74c3c; }
+    .day-temps .min { color: var(--muted); }
+    .day-precip { font-size: 0.8rem; color: #3498db; text-align: right; }
+    .day-uv { font-size: 0.75rem; color: var(--orange); text-align: right; }
+    .aqi-box {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.9rem;
+    }
+    .aqi-circle {
+      width: 70px; height: 70px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .aqi-info .aqi-label { font-weight: 650; font-size: 1.05rem; }
+    .aqi-info .aqi-desc { font-size: 0.85rem; color: var(--muted); }
+    .aqi-details {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      font-size: 0.82rem;
+    }
+    .aqi-item {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 0.5rem;
+      text-align: center;
+    }
+    .aqi-item strong { display: block; font-size: 0.95rem; }
+    .sun-row {
+      display: flex;
+      justify-content: space-around;
+      text-align: center;
+      font-size: 0.9rem;
+      margin-top: 0.8rem;
+      padding-top: 0.8rem;
+      border-top: 1px solid var(--border);
+    }
+    .sun-row span { color: var(--muted); font-size: 0.8rem; display: block; }
+    .chart-card { grid-column: 1 / -1; }
+    .chart-wrap { position: relative; height: 280px; width: 100%; }
+    #loading {
+      position: fixed; inset: 0;
+      background: rgba(255,255,255,0.8);
+      display: none; align-items: center; justify-content: center;
+      z-index: 9999; backdrop-filter: blur(4px);
+    }
+    .spinner {
+      width: 46px; height: 46px;
+      border: 4px solid #e5e7eb;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #error-toast {
+      display: none; position: fixed; bottom: 1.5rem; left: 50%;
+      transform: translateX(-50%);
+      background: var(--red); color: #fff;
+      padding: 0.8rem 1.4rem; border-radius: 10px;
+      box-shadow: var(--shadow); z-index: 10000; font-weight: 500;
+    }
+    .footer {
+      text-align: center; padding: 1.5rem 1rem 2rem;
+      font-size: 0.8rem; color: var(--muted);
+    }
+    .footer a { color: var(--primary); text-decoration: none; }
+    .sidebar { display: flex; flex-direction: column; gap: 1.1rem; }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <h1>Observatorio Climático</h1>
+        <div class="sub">Venezuela y Latinoamérica · Datos abiertos</div>
+      </div>
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="Buscar ciudad (Caracas, Maracaibo, Bogotá...)" />
+        <button id="search-btn" type="button">Buscar</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div style="display:flex; flex-direction:column; gap:1.1rem;">
+      <div class="card map-card">
+        <div class="map-header">
+          <h2>Mapa</h2>
+          <span id="location-label">Caracas, Venezuela</span>
+        </div>
+        <div id="map"></div>
+      </div>
+
+      <div class="card" id="current-card">
+        <h2>Condiciones actuales</h2>
+        <div class="current-main">
+          <div>
+            <div class="temp-big"><span id="temp-now">--</span><span class="temp-unit">°C</span></div>
+          </div>
+          <div>
+            <div class="current-desc" id="weather-desc">Cargando...</div>
+            <div class="feels-like">Sensación: <span id="feels-like">--</span> °C</div>
+          </div>
+        </div>
+        <div class="metrics-grid">
+          <div class="metric"><div class="metric-val" id="humidity">--%</div><div class="metric-lbl">Humedad</div></div>
+          <div class="metric"><div class="metric-val" id="pressure">--</div><div class="metric-lbl">Presión hPa</div></div>
+          <div class="metric"><div class="metric-val" id="wind">--</div><div class="metric-lbl">Viento km/h</div></div>
+          <div class="metric"><div class="metric-val" id="uv">--</div><div class="metric-lbl">Índice UV</div></div>
+          <div class="metric"><div class="metric-val" id="clouds">--%</div><div class="metric-lbl">Nubes</div></div>
+          <div class="metric"><div class="metric-val" id="visibility">--</div><div class="metric-lbl">Visibilidad km</div></div>
+        </div>
+        <div class="sun-row">
+          <div><span>Amanecer</span><strong id="sunrise">--:--</strong></div>
+          <div><span>Atardecer</span><strong id="sunset">--:--</strong></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Próximas horas</h2>
+        <div class="hourly-scroll" id="hourly-container"></div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="card">
+        <h2>Calidad del aire</h2>
+        <div class="aqi-box">
+          <div class="aqi-circle" id="aqi-circle" style="background:#6c757d;">--</div>
+          <div class="aqi-info">
+            <div class="aqi-label" id="aqi-label">Cargando...</div>
+            <div class="aqi-desc" id="aqi-desc"></div>
+          </div>
+        </div>
+        <div class="aqi-details">
+          <div class="aqi-item"><strong id="pm25">--</strong>PM2.5</div>
+          <div class="aqi-item"><strong id="pm10">--</strong>PM10</div>
+          <div class="aqi-item"><strong id="o3">--</strong>Ozono</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Pronóstico 14 días</h2>
+        <div class="daily-list" id="daily-container"></div>
+      </div>
+    </div>
+
+    <div class="card chart-card">
+      <h2>Tendencia histórica (1991–2020)</h2>
+      <p style="font-size:0.85rem; color:var(--muted); margin-bottom:0.8rem;">
+        Temperatura media anual y precipitación acumulada · Reanálisis ERA5 (Open-Meteo)
+      </p>
+      <div class="chart-wrap">
+        <canvas id="historical-chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    Datos: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+    Mapas: <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">OpenStreetMap</a> ·
+    Proyecto 100% gratuito y de código abierto
+  </footer>
+
+  <div id="loading"><div class="spinner"></div></div>
+  <div id="error-toast">No se pudieron cargar los datos. Intenta de nuevo.</div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <script>
+    const CONFIG = {
+      default: { name: "Caracas, Venezuela", lat: 10.4806, lon: -66.9036, zoom: 7 }
+    };
+
+    const API = {
+      async forecast(lat, lon) {
+        const p = new URLSearchParams({
+          latitude: lat, longitude: lon,
+          current: "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index,visibility",
+          hourly: "temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m",
+          daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,sunrise,sunset,uv_index_max",
+          timezone: "auto",
+          forecast_days: 14,
+          temperature_unit: "celsius",
+          wind_speed_unit: "kmh",
+          precipitation_unit: "mm"
+        });
+        const r = await fetch(`https://api.open-meteo.com/v1/forecast?${p}`);
+        if (!r.ok) throw new Error("forecast");
+        return r.json();
+      },
+
+      async airQuality(lat, lon) {
+        const p = new URLSearchParams({
+          latitude: lat, longitude: lon,
+          current: "european_aqi,pm2_5,pm10,ozone,nitrogen_dioxide,sulphur_dioxide,carbon_monoxide",
+          timezone: "auto"
+        });
+        const r = await fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?${p}`);
+        if (!r.ok) throw new Error("aqi");
+        return r.json();
+      },
+
+      async historical(lat, lon) {
+        const p = new URLSearchParams({
+          latitude: lat, longitude: lon,
+          start_date: "1991-01-01", end_date: "2020-12-31",
+          daily: "temperature_2m_mean,precipitation_sum",
+          timezone: "auto"
+        });
+        const r = await fetch(`https://archive-api.open-meteo.com/v1/archive?${p}`);
+        if (!r.ok) throw new Error("historical");
+        const data = await r.json();
+        return this.aggregateYear(data);
+      },
+
+      aggregateYear(data) {
+        if (!data.daily?.time) return null;
+        const years = {};
+        data.daily.time.forEach((d, i) => {
+          const y = d.slice(0, 4);
+          if (!years[y]) years[y] = { t: 0, n: 0, p: 0 };
+          const temp = data.daily.temperature_2m_mean[i];
+          const prec = data.daily.precipitation_sum[i];
+          if (temp != null) { years[y].t += temp; years[y].n++; }
+          if (prec != null) years[y].p += prec;
+        });
+        const labels = [], temps = [], precips = [];
+        Object.keys(years).sort().forEach(y => {
+          labels.push(y);
+          temps.push(years[y].n ? +(years[y].t / years[y].n).toFixed(2) : null);
+          precips.push(+years[y].p.toFixed(1));
+        });
+        return { labels, temps, precips };
+      },
+
+      codeText(c) {
+        const map = {
+          0:"Despejado",1:"Mayormente despejado",2:"Parcialmente nublado",3:"Nublado",
+          45:"Niebla",48:"Niebla con escarcha",51:"Llovizna ligera",53:"Llovizna",55:"Llovizna intensa",
+          61:"Lluvia ligera",63:"Lluvia",65:"Lluvia intensa",71:"Nieve ligera",73:"Nieve",75:"Nieve intensa",
+          80:"Chubascos",81:"Chubascos moderados",82:"Chubascos fuertes",95:"Tormenta",96:"Tormenta con granizo",99:"Tormenta fuerte"
+        };
+        return map[c] || "—";
+      },
+
+      emoji(c) {
+        if (c === 0 || c === 1) return "☀️";
+        if (c === 2 || c === 3) return "⛅";
+        if (c >= 45 && c <= 48) return "🌫️";
+        if (c >= 51 && c <= 67) return "🌧️";
+        if (c >= 71 && c <= 77) return "❄️";
+        if (c >= 80 && c <= 82) return "🌦️";
+        if (c >= 95) return "⛈️";
+        return "🌡️";
+      },
+
+      aqiColor(v) {
+        if (v == null) return "#6c757d";
+        if (v <= 20) return "#198754";
+        if (v <= 40) return "#28a745";
+        if (v <= 60) return "#ffc107";
+        if (v <= 80) return "#fd7e14";
+        if (v <= 100) return "#dc3545";
+        return "#6f42c1";
+      },
+
+      aqiLabel(v) {
+        if (v == null) return "Sin datos";
+        if (v <= 20) return "Excelente";
+        if (v <= 40) return "Buena";
+        if (v <= 60) return "Moderada";
+        if (v <= 80) return "Regular";
+        if (v <= 100) return "Mala";
+        return "Muy mala";
+      }
+    };
+
+    const MapCtrl = {
+      map: null, marker: null,
+      init() {
+        const { lat, lon, zoom } = CONFIG.default;
+        this.map = L.map("map", { center: [lat, lon], zoom, minZoom: 3 });
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: '&copy; OpenStreetMap', maxZoom: 19
+        }).addTo(this.map);
+        this.setMarker(lat, lon, CONFIG.default.name);
+        this.map.on("click", e => {
+          const { lat, lng } = e.latlng;
+          this.setMarker(lat, lng);
+          window.dispatchEvent(new CustomEvent("loc", { detail: { lat, lon: lng, name: `Lat ${lat.toFixed(3)}, Lon ${lng.toFixed(3)}` } }));
+        });
+      },
+      setMarker(lat, lon, text) {
+        if (this.marker) this.map.removeLayer(this.marker);
+        this.marker = L.marker([lat, lon]).addTo(this.map)
+          .bindPopup(text || `${lat.toFixed(3)}, ${lon.toFixed(3)}`).openPopup();
+        this.map.setView([lat, lon], this.map.getZoom());
+      },
+      flyTo(lat, lon, z = 10) {
+        this.map.flyTo([lat, lon], z, { duration: 1.1 });
+        this.setMarker(lat, lon);
+      }
+    };
+
+    let histChart = null;
+    function renderHist(data) {
+      const ctx = document.getElementById("historical-chart");
+      if (!ctx || !data) return;
+      if (histChart) histChart.destroy();
+      histChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: data.labels,
+          datasets: [
+            { label: "Temp. media (°C)", data: data.temps, borderColor: "#e74c3c", backgroundColor: "rgba(231,76,60,0.1)", tension: 0.3, yAxisID: "y" },
+            { label: "Precipitación (mm)", data: data.precips, borderColor: "#3498db", backgroundColor: "rgba(52,152,219,0.1)", tension: 0.3, yAxisID: "y1" }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          interaction: { mode: "index", intersect: false },
+          plugins: { legend: { position: "top", labels: { usePointStyle: true } } },
+          scales: {
+            y: { position: "left", title: { display: true, text: "°C" }, grid: { color: "rgba(0,0,0,0.04)" } },
+            y1: { position: "right", title: { display: true, text: "mm" }, grid: { drawOnChartArea: false } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    const App = {
+      lat: CONFIG.default.lat,
+      lon: CONFIG.default.lon,
+      name: CONFIG.default.name,
+
+      async init() {
+        MapCtrl.init();
+        window.addEventListener("loc", e => {
+          this.lat = e.detail.lat; this.lon = e.detail.lon; this.name = e.detail.name;
+          this.load();
+        });
+        document.getElementById("search-btn").onclick = () => this.search();
+        document.getElementById("search-input").onkeypress = e => { if (e.key === "Enter") this.search(); };
+        await this.load();
+      },
+
+      async search() {
+        const q = document.getElementById("search-input").value.trim();
+        if (!q) return;
+        try {
+          const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5&language=es&format=json`);
+          const d = await r.json();
+          if (!d.results?.length) { alert("No se encontró la ubicación."); return; }
+          const p = d.results[0];
+          this.lat = p.latitude; this.lon = p.longitude;
+          this.name = `${p.name}${p.admin1 ? ", " + p.admin1 : ""}${p.country ? ", " + p.country : ""}`;
+          MapCtrl.flyTo(this.lat, this.lon, 10);
+          MapCtrl.setMarker(this.lat, this.lon, this.name);
+          await this.load();
+        } catch (e) {
+          console.error(e);
+          alert("Error al buscar.");
+        }
+      },
+
+      async load() {
+        this.showLoad(true);
+        document.getElementById("location-label").textContent = this.name;
+        try {
+          const [fc, aq, hist] = await Promise.all([
+            API.forecast(this.lat, this.lon),
+            API.airQuality(this.lat, this.lon).catch(() => null),
+            API.historical(this.lat, this.lon).catch(() => null)
+          ]);
+          this.renderCurrent(fc);
+          this.renderHourly(fc);
+          this.renderDaily(fc);
+          if (aq) this.renderAQI(aq);
+          if (hist) renderHist(hist);
+        } catch (e) {
+          console.error(e);
+          this.showError();
+        } finally {
+          this.showLoad(false);
+        }
+      },
+
+      renderCurrent(d) {
+        const c = d.current;
+        if (!c) return;
+        document.getElementById("temp-now").textContent = c.temperature_2m?.toFixed(1) ?? "--";
+        document.getElementById("feels-like").textContent = c.apparent_temperature?.toFixed(1) ?? "--";
+        document.getElementById("weather-desc").textContent = API.codeText(c.weather_code);
+        document.getElementById("humidity").textContent = (c.relative_humidity_2m ?? "--") + "%";
+        document.getElementById("pressure").textContent = c.pressure_msl?.toFixed(0) ?? "--";
+        document.getElementById("wind").textContent = c.wind_speed_10m?.toFixed(1) ?? "--";
+        document.getElementById("uv").textContent = c.uv_index?.toFixed(1) ?? "--";
+        document.getElementById("clouds").textContent = (c.cloud_cover ?? "--") + "%";
+        document.getElementById("visibility").textContent = c.visibility != null ? (c.visibility / 1000).toFixed(1) : "--";
+
+        if (d.daily?.sunrise?.[0]) {
+          const sr = new Date(d.daily.sunrise[0]);
+          const ss = new Date(d.daily.sunset[0]);
+          document.getElementById("sunrise").textContent = sr.toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" });
+          document.getElementById("sunset").textContent = ss.toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" });
+        }
+      },
+
+      renderHourly(d) {
+        const box = document.getElementById("hourly-container");
+        if (!box || !d.hourly) return;
+        box.innerHTML = "";
+        const now = Date.now();
+        let count = 0;
+        for (let i = 0; i < d.hourly.time.length && count < 24; i++) {
+          const t = new Date(d.hourly.time[i]);
+          if (t.getTime() < now - 3600000) continue;
+          const card = document.createElement("div");
+          card.className = "hour-card";
+          card.innerHTML = `
+            <div class="h-time">${t.toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" })}</div>
+            <div class="h-icon">${API.emoji(d.hourly.weather_code[i])}</div>
+            <div class="h-temp">${d.hourly.temperature_2m[i]?.toFixed(0) ?? "--"}°</div>
+            <div class="h-precip">${d.hourly.precipitation_probability[i] != null ? d.hourly.precipitation_probability[i] + "%" : ""}</div>
+          `;
+          box.appendChild(card);
+          count++;
+        }
+      },
+
+      renderDaily(d) {
+        const box = document.getElementById("daily-container");
+        if (!box || !d.daily) return;
+        box.innerHTML = "";
+        d.daily.time.forEach((dateStr, i) => {
+          const date = new Date(dateStr + "T12:00:00");
+          const name = date.toLocaleDateString("es-VE", { weekday: "short", day: "numeric", month: "short" });
+          const row = document.createElement("div");
+          row.className = "day-row";
+          row.innerHTML = `
+            <div class="day-name">${name}</div>
+            <div class="day-icon">${API.emoji(d.daily.weather_code[i])}</div>
+            <div class="day-temps">
+              <span class="max">${d.daily.temperature_2m_max[i]?.toFixed(0) ?? "--"}°</span>
+              <span class="min">${d.daily.temperature_2m_min[i]?.toFixed(0) ?? "--"}°</span>
+            </div>
+            <div class="day-precip">${d.daily.precipitation_sum[i] > 0 ? d.daily.precipitation_sum[i].toFixed(1) + " mm" : "—"}</div>
+            <div class="day-uv">UV ${d.daily.uv_index_max[i]?.toFixed(0) ?? "—"}</div>
+          `;
+          box.appendChild(row);
+        });
+      },
+
+      renderAQI(d) {
+        const c = d.current;
+        if (!c) return;
+        const aqi = c.european_aqi;
+        const circle = document.getElementById("aqi-circle");
+        circle.textContent = aqi != null ? Math.round(aqi) : "--";
+        circle.style.background = API.aqiColor(aqi);
+        document.getElementById("aqi-label").textContent = API.aqiLabel(aqi);
+        document.getElementById("aqi-desc").textContent = aqi != null ? `Índice europeo AQI` : "";
+        document.getElementById("pm25").textContent = c.pm2_5 != null ? c.pm2_5.toFixed(1) : "--";
+        document.getElementById("pm10").textContent = c.pm10 != null ? c.pm10.toFixed(1) : "--";
+        document.getElementById("o3").textContent = c.ozone != null ? c.ozone.toFixed(0) : "--";
+      },
+
+      showLoad(v) { document.getElementById("loading").style.display = v ? "flex" : "none"; },
+      showError() {
+        const el = document.getElementById("error-toast");
+        el.style.display = "block";
+        setTimeout(() => el.style.display = "none", 4000);
+      }
+    };
+
+    document.addEventListener("DOMContentLoaded", () => App.init());
+  </script>
+</body>
+</html>
