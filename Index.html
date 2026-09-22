@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b5ed7" />
+  <title>Observatorio Climático — Venezuela</title>
+  <meta name="description" content="Mapa climático en tiempo real: temperatura, lluvia, viento, pronóstico y calidad del aire. Enfoque Municipio Simón Bolívar, Anzoátegui." />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root {
+      --primary: #0b5ed7;
+      --primary-dark: #084298;
+      --bg: #eef1f5;
+      --card: #ffffff;
+      --text: #1a1a1a;
+      --muted: #6c757d;
+      --border: #e2e5ea;
+      --shadow: 0 2px 10px rgba(0,0,0,0.07);
+      --radius: 12px;
+      --red: #dc3545;
+      --orange: #fd7e14;
+      --green: #198754;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      background: var(--bg); color: var(--text);
+      line-height: 1.4; min-height: 100vh; font-size: 14px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #fff; padding: 0.6rem 0.75rem;
+      position: sticky; top: 0; z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .header-inner { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.4rem; }
+    .brand h1 { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+    .brand .sub { font-size: 0.68rem; opacity: 0.88; }
+    .search-box { display: flex; gap: 0.3rem; width: 100%; }
+    .search-box input {
+      flex: 1; padding: 0.5rem 0.7rem; border: none; border-radius: 8px;
+      font-size: 0.88rem; outline: none;
+    }
+    .search-box button {
+      background: #fff; color: var(--primary); border: none;
+      padding: 0.5rem 0.85rem; border-radius: 8px; font-weight: 700;
+      font-size: 0.85rem; cursor: pointer; white-space: nowrap;
+    }
+    .search-box button:active { opacity: 0.85; }
+    .quick-locs { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+    .quick-loc-btn {
+      background: rgba(255,255,255,0.16); color: #fff;
+      border: 1px solid rgba(255,255,255,0.32);
+      padding: 0.28rem 0.6rem; border-radius: 16px;
+      font-size: 0.7rem; font-weight: 600; cursor: pointer;
+    }
+    .quick-loc-btn:active, .quick-loc-btn.active {
+      background: rgba(255,255,255,0.38);
+    }
+    .container {
+      max-width: 720px; margin: 0 auto; padding: 0.55rem;
+      display: flex; flex-direction: column; gap: 0.55rem;
+    }
+    .card {
+      background: var(--card); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 0.7rem 0.8rem;
+    }
+    .card h2 {
+      font-size: 0.88rem; font-weight: 700; margin-bottom: 0.5rem;
+      color: #222; display: flex; align-items: center; gap: 0.35rem;
+    }
+    .map-card { padding: 0; overflow: hidden; }
+    .map-header {
+      padding: 0.5rem 0.7rem; border-bottom: 1px solid var(--border);
+      display: flex; flex-wrap: wrap; justify-content: space-between;
+      align-items: center; gap: 0.4rem; background: #f7f9fc;
+    }
+    .map-header h2 { margin: 0; font-size: 0.85rem; }
+    #location-label { font-size: 0.72rem; color: var(--muted); display: block; margin-top: 1px; }
+    .layer-toggles { display: flex; flex-wrap: wrap; gap: 0.28rem; }
+    .layer-btn {
+      border: 1px solid var(--border); background: #fff; color: var(--text);
+      padding: 0.28rem 0.55rem; border-radius: 16px; font-size: 0.72rem;
+      font-weight: 650; cursor: pointer; transition: background 0.15s, color 0.15s;
+    }
+    .layer-btn.active {
+      background: var(--primary); color: #fff; border-color: var(--primary);
+    }
+    #map {
+      height: 260px; min-height: 260px; width: 100%; background: #c5d9e8;
+    }
+    @media (min-width: 480px) { #map { height: 300px; min-height: 300px; } }
+    @media (min-width: 700px) { #map { height: 360px; min-height: 360px; } }
+    .temp-legend, .layer-legend {
+      display: none; padding: 0.4rem 0.65rem 0.5rem;
+      background: #f7f9fc; border-top: 1px solid var(--border);
+      font-size: 0.62rem; color: var(--muted); flex-direction: column; gap: 0.2rem;
+    }
+    .temp-legend.visible, .layer-legend.visible { display: flex; }
+    .temp-legend .grad {
+      height: 11px; width: 100%; border-radius: 4px;
+      background: linear-gradient(90deg,
+        #1e90ff 0%, #22c55e 15%, #84cc16 28%, #eab308 42%,
+        #f59e0b 55%, #f97316 68%, #ef4444 80%, #b91c1c 92%, #7f1d1d 100%);
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    .temp-legend .labels {
+      display: flex; justify-content: space-between; width: 100%;
+      font-size: 0.58rem; color: #555;
+    }
+    .current-main {
+      display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.55rem;
+    }
+    .temp-big {
+      font-size: 2.35rem; font-weight: 750; line-height: 1; color: var(--primary);
+    }
+    .temp-unit { font-size: 1rem; font-weight: 550; }
+    .current-desc { font-size: 0.95rem; font-weight: 600; }
+    .feels-like { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .metrics-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.35rem;
+    }
+    .metric {
+      background: #f5f7fa; border-radius: 8px;
+      padding: 0.4rem 0.25rem; text-align: center;
+    }
+    .metric-val { font-size: 0.9rem; font-weight: 700; }
+    .metric-lbl { font-size: 0.62rem; color: var(--muted); margin-top: 0.05rem; }
+    .sun-row {
+      display: flex; justify-content: space-around; text-align: center;
+      font-size: 0.8rem; margin-top: 0.5rem; padding-top: 0.45rem;
+      border-top: 1px solid var(--border);
+    }
+    .sun-row span { color: var(--muted); font-size: 0.65rem; display: block; }
+    .hours-featured {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.28rem; margin-bottom: 0.45rem;
+    }
+    .hour-feat {
+      background: #eef5ff; border: 1px solid #d6e4ff; border-radius: 9px;
+      padding: 0.4rem 0.15rem; text-align: center; font-size: 0.7rem;
+    }
+    .hour-feat .hf-time { font-weight: 700; font-size: 0.72rem; }
+    .hour-feat .hf-icon { font-size: 1.2rem; margin: 0.12rem 0; }
+    .hour-feat .hf-temp { font-weight: 750; font-size: 0.9rem; color: var(--primary); }
+    .hour-feat .hf-precip { font-size: 0.6rem; color: #3498db; }
+    .hours-scroll-label { font-size: 0.68rem; color: var(--muted); margin-bottom: 0.25rem; }
+    .hourly-scroll {
+      display: flex; gap: 0.3rem; overflow-x: auto; padding-bottom: 0.3rem;
+      -webkit-overflow-scrolling: touch; scrollbar-width: thin;
+    }
+    .hour-card {
+      flex: 0 0 54px; background: #f5f7fa; border-radius: 8px;
+      padding: 0.35rem 0.15rem; text-align: center; font-size: 0.66rem;
+    }
+    .hour-card .h-time { font-weight: 650; }
+    .hour-card .h-icon { font-size: 1.05rem; }
+    .hour-card .h-temp { font-weight: 700; }
+    .hour-card .h-precip { font-size: 0.58rem; color: #3498db; }
+    .aqi-box { display: flex; align-items: center; gap: 0.65rem; margin-bottom: 0.5rem; }
+    .aqi-circle {
+      width: 52px; height: 52px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 750; color: #fff; flex-shrink: 0;
+    }
+    .aqi-info .aqi-label { font-weight: 700; font-size: 0.92rem; }
+    .aqi-info .aqi-desc { font-size: 0.72rem; color: var(--muted); }
+    .aqi-details {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.3rem; font-size: 0.72rem;
+    }
+    .aqi-item {
+      background: #f5f7fa; border-radius: 8px; padding: 0.35rem; text-align: center;
+    }
+    .aqi-item strong { display: block; font-size: 0.88rem; }
+    .daily-list {
+      display: flex; flex-direction: column; gap: 0.28rem;
+      max-height: 220px; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    }
+    .day-row {
+      display: grid; grid-template-columns: 72px 26px 1fr 54px 40px;
+      align-items: center; gap: 0.2rem; padding: 0.35rem 0.45rem;
+      background: #f5f7fa; border-radius: 8px; font-size: 0.74rem;
+    }
+    .day-name { font-weight: 600; text-transform: capitalize; }
+    .day-icon { font-size: 1rem; text-align: center; }
+    .day-temps { display: flex; gap: 0.3rem; }
+    .day-temps .max { font-weight: 750; color: #e74c3c; }
+    .day-temps .min { color: var(--muted); }
+    .day-precip { font-size: 0.66rem; color: #3498db; text-align: right; }
+    .day-uv { font-size: 0.64rem; color: var(--orange); text-align: right; }
+    .chart-toolbar { display: flex; gap: 0.35rem; margin-bottom: 0.35rem; flex-wrap: wrap; }
+    .chart-btn {
+      border: 1px solid var(--border); background: #f5f7fa; color: var(--text);
+      padding: 0.28rem 0.6rem; border-radius: 7px; font-size: 0.72rem;
+      font-weight: 650; cursor: pointer;
+    }
+    .chart-btn:active { background: #e8ecf0; }
+    .chart-hint { font-size: 0.66rem; color: var(--muted); margin-bottom: 0.3rem; }
+    .chart-wrap { position: relative; height: 190px; width: 100%; touch-action: pan-y; }
+    .chart-note { font-size: 0.72rem; color: var(--muted); margin-bottom: 0.3rem; }
+    .tips {
+      font-size: 0.72rem; color: var(--muted); line-height: 1.45;
+      background: #f0f6ff; border-radius: 8px; padding: 0.55rem 0.65rem;
+      border-left: 3px solid var(--primary);
+    }
+    #loading {
+      position: fixed; inset: 0; background: rgba(255,255,255,0.82);
+      display: none; align-items: center; justify-content: center; z-index: 9999;
+    }
+    .spinner {
+      width: 40px; height: 40px; border: 3px solid #e5e7eb;
+      border-top-color: var(--primary); border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #error-toast {
+      display: none; position: fixed; bottom: 1.1rem; left: 50%;
+      transform: translateX(-50%); background: var(--red); color: #fff;
+      padding: 0.6rem 1.1rem; border-radius: 10px; z-index: 10000;
+      font-size: 0.82rem; max-width: 90%; text-align: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    }
+    .footer {
+      text-align: center; padding: 0.85rem 0.5rem 1.4rem;
+      font-size: 0.66rem; color: var(--muted);
+    }
+    .footer a { color: var(--primary); text-decoration: none; }
+    .leaflet-control-attribution { font-size: 9px !important; }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <h1>Observatorio Climático</h1>
+        <div class="sub">Venezuela · Datos abiertos · Enfoque Anzoátegui</div>
+      </div>
+      <div class="search-box">
+        <input type="text" id="search-input" placeholder="Buscar ciudad o zona..." autocomplete="off" />
+        <button id="search-btn" type="button">Buscar</button>
+      </div>
+      <div class="quick-locs">
+        <button type="button" class="quick-loc-btn" id="btn-simon-bolivar">📍 Simón Bolívar (Anzoátegui)</button>
+        <button type="button" class="quick-loc-btn" id="btn-caracas">Caracas</button>
+        <button type="button" class="quick-loc-btn" id="btn-maracaibo">Maracaibo</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="card map-card">
+      <div class="map-header">
+        <div>
+          <h2>Mapa</h2>
+          <span id="location-label">Caracas, Venezuela</span>
+        </div>
+        <div class="layer-toggles">
+          <button type="button" class="layer-btn" id="btn-rain">🌧 Lluvia</button>
+          <button type="button" class="layer-btn" id="btn-temp">🌡 Temp.</button>
+          <button type="button" class="layer-btn" id="btn-wind">💨 Viento</button>
+        </div>
+      </div>
+      <div id="map"></div>
+      <div class="temp-legend" id="temp-legend">
+        <div style="font-weight:650;margin-bottom:2px;">Temperatura (°C)</div>
+        <div class="grad"></div>
+        <div class="labels">
+          <span>14</span><span>18</span><span>22</span><span>26</span><span>30</span><span>34+</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tips" id="map-tips">
+      Toca el mapa para ver el clima de ese punto. En Simón Bolívar, acerca el zoom para ver parroquias y barrios con temperatura.
+    </div>
+
+    <div class="card">
+      <h2>Condiciones actuales</h2>
+      <div class="current-main">
+        <div>
+          <div class="temp-big"><span id="temp-now">--</span><span class="temp-unit">°C</span></div>
+        </div>
+        <div>
+          <div class="current-desc" id="weather-desc">Cargando...</div>
+          <div class="feels-like">Sensación: <span id="feels-like">--</span> °C</div>
+        </div>
+      </div>
+      <div class="metrics-grid">
+        <div class="metric"><div class="metric-val" id="humidity">--%</div><div class="metric-lbl">Humedad</div></div>
+        <div class="metric"><div class="metric-val" id="pressure">--</div><div class="metric-lbl">Presión hPa</div></div>
+        <div class="metric"><div class="metric-val" id="wind">--</div><div class="metric-lbl">Viento</div></div>
+        <div class="metric"><div class="metric-val" id="uv">--</div><div class="metric-lbl">Índice UV</div></div>
+        <div class="metric"><div class="metric-val" id="clouds">--%</div><div class="metric-lbl">Nubes</div></div>
+        <div class="metric"><div class="metric-val" id="visibility">--</div><div class="metric-lbl">Visib. km</div></div>
+      </div>
+      <div class="sun-row">
+        <div><span>Amanecer</span><strong id="sunrise">--:--</strong></div>
+        <div><span>Atardecer</span><strong id="sunset">--:--</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Calidad del aire</h2>
+      <div class="aqi-box">
+        <div class="aqi-circle" id="aqi-circle" style="background:#6c757d;">--</div>
+        <div class="aqi-info">
+          <div class="aqi-label" id="aqi-label">Cargando...</div>
+          <div class="aqi-desc" id="aqi-desc"></div>
+        </div>
+      </div>
+      <div class="aqi-details">
+        <div class="aqi-item"><strong id="pm25">--</strong>PM2.5</div>
+        <div class="aqi-item"><strong id="pm10">--</strong>PM10</div>
+        <div class="aqi-item"><strong id="o3">--</strong>Ozono</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Próximas horas</h2>
+      <div class="hours-featured" id="hours-featured"></div>
+      <div class="hours-scroll-label" id="hours-scroll-label">Más horas (desliza →)</div>
+      <div class="hourly-scroll" id="hours-scroll"></div>
+    </div>
+
+    <div class="card">
+      <h2>Pronóstico 5 días</h2>
+      <div class="daily-list" id="daily-container"></div>
+    </div>
+
+    <div class="card">
+      <h2>Historial reciente (por hora)</h2>
+      <p class="chart-note">Temperatura y precipitación de las últimas horas.</p>
+      <div class="chart-toolbar">
+        <button type="button" class="chart-btn" id="chart-zoom-in">＋ Zoom</button>
+        <button type="button" class="chart-btn" id="chart-zoom-out">－ Zoom</button>
+        <button type="button" class="chart-btn" id="chart-reset">Restablecer</button>
+      </div>
+      <p class="chart-hint">Pellizca o usa los botones · Arrastra para desplazar</p>
+      <div class="chart-wrap"><canvas id="recent-chart"></canvas></div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    Datos: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> ·
+    Capas mapa: <a href="https://openweathermap.org/" target="_blank" rel="noopener">OpenWeatherMap</a> ·
+    Radar: <a href="https://www.rainviewer.com/" target="_blank" rel="noopener">RainViewer</a> ·
+    Mapas: OSM · Contornos: OpenStreetMap
+  </footer>
+
+  <div id="loading"><div class="spinner"></div></div>
+  <div id="error-toast"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+  <script>
+(function () {
+  "use strict";
+
+  function waitLibs(cb) {
+    if (typeof L !== "undefined" && typeof Chart !== "undefined") cb();
+    else setTimeout(function () { waitLibs(cb); }, 40);
+  }
+
+  var CONFIG = {
+    default: { name: "Caracas, Venezuela", lat: 10.4806, lon: -66.9036, zoom: 7 },
+    OWM_API_KEY: "61e5f74a994a56fa9356e788b1905be8"
+  };
+
+  /* Contorno Municipio Simón Bolívar, Anzoátegui (simplificado OSM) */
+  var SIMON_BOLIVAR_BOUNDARY = {
+    type: "Feature",
+    properties: { name: "Municipio Simón Bolívar, Anzoátegui" },
+    geometry: {
+      type: "Polygon",
+      coordinates: [[
+        [-64.963807,9.7337006],[-64.9003816,9.9387548],[-64.9201226,9.9719573],
+        [-64.8737687,10.0107666],[-64.9080849,10.0704456],[-64.894045,10.114207],
+        [-64.871473,10.110815],[-64.871545,10.093227],[-64.856894,10.110911],
+        [-64.847388,10.093813],[-64.777493,10.103607],[-64.726314,10.13086],
+        [-64.714212,10.177805],[-64.6982878,10.1658255],[-64.6508603,10.178994],
+        [-64.6245539,10.1672776],[-64.629103,10.1309479],[-64.5923889,10.1123484],
+        [-64.5850396,10.0955964],[-64.5390129,10.0806076],[-64.4598556,10.1030853],
+        [-64.4582141,10.1225091],[-64.4188419,10.1383382],[-64.4009864,10.1346127],
+        [-64.3975425,10.1135103],[-64.3848288,10.114915],[-64.3859446,10.0972019],
+        [-64.3656027,10.0960083],[-64.3660748,10.0847694],[-64.2845678,10.0939803],
+        [-64.2735172,10.0618256],[-64.1980451,10.0617886],[-64.1128693,10.0863556],
+        [-64.1651291,9.9573954],[-64.3036653,9.9580301],[-64.3537045,9.9845738],
+        [-64.3609143,9.9706259],[-64.4180776,9.9780649],[-64.4428397,9.9517319],
+        [-64.4732881,9.949238],[-64.4733525,9.9233678],[-64.5647622,9.9204086],
+        [-64.6894041,9.8635125],[-64.8265243,9.9137504],[-64.8495805,9.71426],
+        [-64.8872092,9.7421108],[-64.9122477,9.713726],[-64.963807,9.7337006]
+      ]]
+    }
+  };
+
+  /* Parroquias del municipio: z = zoom mínimo para mostrar etiqueta */
+  var MUNI_ZONES = [
+    { name: "San Cristóbal", lat: 10.04166, lon: -64.74482, z: 10 },
+    { name: "El Carmen", lat: 10.12267, lon: -64.63615, z: 10 },
+    { name: "Bergantín", lat: 10.0349, lon: -64.3125, z: 10 },
+    { name: "Caigua", lat: 9.8641, lon: -64.8857, z: 10 },
+    { name: "Naricual", lat: 10.0570, lon: -64.5611, z: 10 },
+    { name: "El Pilar", lat: 9.9362, lon: -64.7755, z: 10 }
+  ];
+
+  var PARISH_POLYGONS = {
+  "San Cristóbal": { centroid: [10.04166, -64.74482], ring: [[-64.9029468,10.088774],[-64.9080849,10.0704456],[-64.9002314,10.0531632],[-64.877454,10.0308536],[-64.879463,10.0148845],[-64.8645392,10.0078003],[-64.8682085,9.9968172],[-64.8601833,9.9758141],[-64.8362661,9.9794384],[-64.8270607,10.0055367],[-64.7686315,10.0172221],[-64.7519267,10.0023141],[-64.7499848,9.9884727],[-64.7596836,9.9710063],[-64.753139,9.9531056],[-64.7035289,9.9262634],[-64.6994735,9.914913],[-64.661665,9.9053589],[-64.6429765,9.8843536],[-64.5694078,9.9173755],[-64.5766604,9.9290693],[-64.5955056,9.9382],[-64.6148175,9.9779855],[-64.5966697,9.9838341],[-64.5914984,9.999958],[-64.6128703,10.0097629],[-64.6201551,10.0262394],[-64.6470469,10.0307348],[-64.6689686,10.0546184],[-64.6677455,10.0684728],[-64.6756876,10.0771534],[-64.6683195,10.0743382],[-64.667421,10.0828575],[-64.6577355,10.0832114],[-64.6650258,10.0973709],[-64.650566,10.112623],[-64.6587923,10.11717],[-64.6574083,10.123494],[-64.6776268,10.1262057],[-64.6853006,10.154127],[-64.714212,10.177805],[-64.726314,10.13086],[-64.758594,10.110504],[-64.802022,10.097647],[-64.843442,10.093655],[-64.848418,10.093944],[-64.848573,10.107631],[-64.856894,10.110911],[-64.8687,10.093086],[-64.871473,10.110815],[-64.892911,10.114527],[-64.900318,10.106641],[-64.9029468,10.088774]] },
+  "El Carmen": { centroid: [10.12267, -64.63615], ring: [[-64.701013,10.1684841],[-64.693197,10.1674254],[-64.6821428,10.1770059],[-64.6589613,10.1716178],[-64.6508603,10.178994],[-64.6502495,10.1727847],[-64.6245539,10.1672776],[-64.629103,10.1309479],[-64.5923889,10.1123484],[-64.5915199,10.0995785],[-64.5679486,10.0941757],[-64.5663446,10.0856224],[-64.5867884,10.0823901],[-64.5935476,10.0899453],[-64.6001002,10.0836497],[-64.6079135,10.0903467],[-64.6190581,10.0808056],[-64.6175399,10.0878195],[-64.6287435,10.0891504],[-64.6336681,10.0813602],[-64.6449816,10.0989289],[-64.6306962,10.11327],[-64.6412024,10.1152609],[-64.6481118,10.1274889],[-64.6634433,10.1202726],[-64.6643659,10.1258941],[-64.67484,10.123692],[-64.6841848,10.1524135],[-64.701013,10.1684841]] },
+  "Bergantín": { centroid: [10.03495, -64.31254], ring: [[-64.4180776,9.9780649],[-64.4962264,10.021089],[-64.4858408,10.0371476],[-64.4090867,10.0757907],[-64.3603939,10.0858204],[-64.3359643,10.0813258],[-64.3098772,10.095702],[-64.2845678,10.0939803],[-64.2736284,10.0790436],[-64.2735172,10.0618256],[-64.2601597,10.0606108],[-64.2200875,10.0662518],[-64.1980451,10.0617886],[-64.1128693,10.0863556],[-64.1651291,9.9573954],[-64.2109681,9.9654693],[-64.3036653,9.9580301],[-64.3537045,9.9845738],[-64.3609143,9.9706259],[-64.4180776,9.9780649]] },
+  "Caigua": { centroid: [9.86409, -64.88570], ring: [[-64.963807,9.7337006],[-64.955721,9.7725867],[-64.9359799,9.805531],[-64.930873,9.8237145],[-64.9350357,9.8394023],[-64.9211741,9.8553853],[-64.9003816,9.9387548],[-64.9012399,9.9510978],[-64.9092651,9.9513726],[-64.9201226,9.9719573],[-64.8871851,10.0033813],[-64.8698393,10.0106689],[-64.8644829,10.0076419],[-64.8682085,9.9968172],[-64.8607197,9.97625],[-64.8522735,9.9771561],[-64.8493123,9.9684174],[-64.8296786,9.960228],[-64.8316527,9.9526407],[-64.8225975,9.9420097],[-64.7989512,9.9247628],[-64.7992945,9.9119538],[-64.8265243,9.9137504],[-64.8340131,9.8103941],[-64.8495805,9.71426],[-64.8697561,9.7233861],[-64.8714405,9.7327737],[-64.8872092,9.7421108],[-64.9122477,9.713726],[-64.9270588,9.7144186],[-64.9294353,9.7209856],[-64.9492514,9.7199282],[-64.963807,9.7337006]] },
+  "Naricual": { centroid: [10.05698, -64.56109], ring: [[-64.6757305,10.0769949],[-64.6683195,10.0743382],[-64.667421,10.0828575],[-64.6577355,10.0832114],[-64.6650258,10.0973709],[-64.6504828,10.112285],[-64.6587923,10.11717],[-64.6573091,10.1228867],[-64.6481869,10.1274995],[-64.6412024,10.1152609],[-64.6302858,10.1125042],[-64.6449816,10.0989289],[-64.6333891,10.0812334],[-64.6290627,10.0890844],[-64.6175399,10.0878195],[-64.6190581,10.0808056],[-64.6054459,10.0904893],[-64.6002692,10.0836814],[-64.593392,10.0899506],[-64.5872511,10.0825063],[-64.5705798,10.0824693],[-64.5619726,10.0947408],[-64.5462013,10.0900298],[-64.5406652,10.0809456],[-64.5174265,10.0802062],[-64.4598556,10.1030853],[-64.4582141,10.1225091],[-64.4188419,10.1383382],[-64.4009864,10.1346127],[-64.3973708,10.1133518],[-64.3848288,10.114915],[-64.3859446,10.0972019],[-64.3650019,10.0941546],[-64.3660748,10.0847694],[-64.4090867,10.0757907],[-64.4559503,10.0559732],[-64.4858408,10.0371476],[-64.4962264,10.021089],[-64.4180776,9.9780649],[-64.4428397,9.9517319],[-64.4668723,9.9546908],[-64.4732881,9.949238],[-64.4733525,9.9233678],[-64.5479823,9.9250164],[-64.5694078,9.9173755],[-64.5766604,9.9290693],[-64.5955056,9.9382],[-64.6148175,9.9779855],[-64.5966697,9.9838341],[-64.5914984,9.999958],[-64.6128703,10.0097629],[-64.6201551,10.0262394],[-64.6468592,10.030608],[-64.6508181,10.0399736],[-64.6610266,10.0415741],[-64.6690008,10.0547082],[-64.6677455,10.0684728],[-64.6757305,10.0769949]] },
+  "El Pilar": { centroid: [9.93616, -64.77554], ring: [[-64.8522735,9.9771561],[-64.8493123,9.9684174],[-64.8296786,9.960228],[-64.8316527,9.9526407],[-64.8225975,9.9420097],[-64.7989512,9.9247628],[-64.7992945,9.9119538],[-64.8067256,9.9116739],[-64.807663,9.9032873],[-64.7882009,9.8941767],[-64.7714639,9.8990808],[-64.7502852,9.8914499],[-64.7417021,9.875976],[-64.6894041,9.8635125],[-64.6429765,9.8843536],[-64.661665,9.9053589],[-64.6994735,9.914913],[-64.7035289,9.9262634],[-64.753139,9.9531056],[-64.7596836,9.9710063],[-64.7505212,9.9955097],[-64.7626126,10.015109],[-64.8270607,10.0055367],[-64.8362661,9.9794384],[-64.8522735,9.9771561]] },
+};
+
+  var API = {
+    forecast: function (lat, lon) {
+      var p = new URLSearchParams({
+        latitude: String(lat), longitude: String(lon),
+        current: "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,uv_index,visibility",
+        hourly: "temperature_2m,precipitation_probability,precipitation,weather_code,wind_speed_10m",
+        daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,sunrise,sunset,uv_index_max",
+        timezone: "auto", past_days: "2", forecast_days: "5",
+        temperature_unit: "celsius", wind_speed_unit: "kmh", precipitation_unit: "mm"
+      });
+      return fetch("https://api.open-meteo.com/v1/forecast?" + p).then(function (r) {
+        if (!r.ok) throw new Error("forecast " + r.status);
+        return r.json();
+      });
+    },
+    airQuality: function (lat, lon) {
+      var p = new URLSearchParams({
+        latitude: String(lat), longitude: String(lon),
+        current: "european_aqi,pm2_5,pm10,ozone", timezone: "auto"
+      });
+      return fetch("https://air-quality-api.open-meteo.com/v1/air-quality?" + p).then(function (r) {
+        if (!r.ok) throw new Error("aqi " + r.status);
+        return r.json();
+      });
+    },
+    codeText: function (c) {
+      var m = {
+        0: "Despejado", 1: "Mayormente despejado", 2: "Parcialmente nublado", 3: "Nublado",
+        45: "Niebla", 48: "Niebla", 51: "Llovizna", 53: "Llovizna", 55: "Llovizna intensa",
+        61: "Lluvia ligera", 63: "Lluvia", 65: "Lluvia intensa",
+        80: "Chubascos", 81: "Chubascos", 82: "Chubascos fuertes",
+        95: "Tormenta", 96: "Tormenta", 99: "Tormenta"
+      };
+      return m[c] || "—";
+    },
+    emoji: function (c) {
+      if (c === 0 || c === 1) return "☀️";
+      if (c === 2 || c === 3) return "⛅";
+      if (c >= 45 && c <= 48) return "🌫️";
+      if (c >= 51 && c <= 67) return "🌧️";
+      if (c >= 71 && c <= 77) return "❄️";
+      if (c >= 80 && c <= 82) return "🌦️";
+      if (c >= 95) return "⛈️";
+      return "🌡️";
+    },
+    aqiColor: function (v) {
+      if (v == null) return "#6c757d";
+      if (v <= 20) return "#198754";
+      if (v <= 40) return "#28a745";
+      if (v <= 60) return "#ffc107";
+      if (v <= 80) return "#fd7e14";
+      if (v <= 100) return "#dc3545";
+      return "#6f42c1";
+    },
+    aqiLabel: function (v) {
+      if (v == null) return "Sin datos";
+      if (v <= 20) return "Excelente";
+      if (v <= 40) return "Buena";
+      if (v <= 60) return "Moderada";
+      if (v <= 80) return "Regular";
+      if (v <= 100) return "Mala";
+      return "Muy mala";
+    },
+    windArrow: function (deg) {
+      if (deg == null) return "·";
+      var dirs = ["↓","↙","←","↖","↑","↗","→","↘"];
+      var idx = Math.round(((deg % 360) / 45)) % 8;
+      return dirs[idx];
+    },
+    windCardinal: function (deg) {
+      if (deg == null) return "—";
+      var c = ["N","NE","E","SE","S","SO","O","NO"];
+      var idx = Math.round(((deg % 360) / 45)) % 8;
+      return c[idx];
+    }
+  };
+
+  var MapCtrl = {
+    map: null,
+    marker: null,
+    rainLayer: null,
+    tempLayer: null,
+    tempLayer2: null,
+    windLayer: null,
+    muniLayer: null,
+    parishLayer: null,
+    zoneGroup: null,
+    zoneData: null,
+    focusMuni: false,
+    windParticles: null,
+    windAnimId: null,
+    windGrid: null,
+    layers: { rain: false, temp: false, wind: false },
+
+    init: function () {
+      var self = this;
+      try {
+        this.map = L.map("map", {
+          center: [CONFIG.default.lat, CONFIG.default.lon],
+          zoom: CONFIG.default.zoom,
+          minZoom: 4,
+          maxZoom: 18,
+          zoomControl: true
+        });
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          attribution: "&copy; OSM",
+          maxZoom: 19
+        }).addTo(this.map);
+
+        this.map.createPane("tempPane");
+        this.map.getPane("tempPane").style.zIndex = 450;
+        this.map.getPane("tempPane").style.filter = "saturate(3.5) contrast(1.45) brightness(1.06)";
+
+        this.setMarker(CONFIG.default.lat, CONFIG.default.lon, CONFIG.default.name);
+        this.zoneGroup = L.layerGroup().addTo(this.map);
+
+        this.map.on("click", function (e) {
+          self.onMapClick(e.latlng.lat, e.latlng.lng);
+        });
+
+        var moveTimer = null;
+        this.map.on("moveend", function () {
+          clearTimeout(moveTimer);
+          moveTimer = setTimeout(function () {
+            if (self.layers.wind) self.refreshWindParticles();
+            if (self.focusMuni) self.refreshZoneLabels();
+          }, 320);
+        });
+
+        document.getElementById("btn-rain").onclick = function () { self.toggle("rain"); };
+        document.getElementById("btn-temp").onclick = function () { self.toggle("temp"); };
+        document.getElementById("btn-wind").onclick = function () { self.toggle("wind"); };
+
+        function fixSize() {
+          if (self.map) self.map.invalidateSize(true);
+        }
+        setTimeout(fixSize, 80);
+        setTimeout(fixSize, 350);
+        setTimeout(fixSize, 900);
+        window.addEventListener("resize", fixSize);
+        window.addEventListener("orientationchange", function () { setTimeout(fixSize, 280); });
+      } catch (err) {
+        document.getElementById("map").innerHTML =
+          '<p style="padding:1.5rem;text-align:center;color:#666;">No se pudo cargar el mapa.</p>';
+      }
+    },
+
+    onMapClick: function (lat, lon) {
+      var name = "Punto seleccionado";
+      this.setMarker(lat, lon, name);
+      window.dispatchEvent(new CustomEvent("loc", {
+        detail: { lat: lat, lon: lon, name: name }
+      }));
+    },
+
+    setMarker: function (lat, lon, text) {
+      if (this.marker) this.map.removeLayer(this.marker);
+      this.marker = L.marker([lat, lon])
+        .addTo(this.map)
+        .bindPopup(text || (lat.toFixed(3) + ", " + lon.toFixed(3)))
+        .openPopup();
+    },
+
+    flyTo: function (lat, lon, z) {
+      this.map.flyTo([lat, lon], z || 10, { duration: 0.95 });
+      this.setMarker(lat, lon);
+      var self = this;
+      setTimeout(function () { self.map.invalidateSize(true); }, 400);
+    },
+
+    showMunicipioSimonBolivar: function () {
+      var self = this;
+      this.focusMuni = true;
+      if (this.muniLayer) { this.map.removeLayer(this.muniLayer); this.muniLayer = null; }
+      if (this.parishLayer) { this.map.removeLayer(this.parishLayer); this.parishLayer = null; }
+      if (this.zoneGroup) this.zoneGroup.clearLayers();
+
+      this.muniLayer = L.geoJSON(SIMON_BOLIVAR_BOUNDARY, {
+        style: {
+          color: "#0b5ed7", weight: 2, opacity: 0.95,
+          fillColor: "#0b5ed7", fillOpacity: 0.04
+        },
+        interactive: false
+      }).addTo(this.map);
+
+      var parishFeatures = [];
+      Object.keys(PARISH_POLYGONS).forEach(function (name) {
+        var p = PARISH_POLYGONS[name];
+        parishFeatures.push({
+          type: "Feature",
+          properties: { name: name },
+          geometry: { type: "Polygon", coordinates: [p.ring] }
+        });
+      });
+      this.parishLayer = L.geoJSON({ type: "FeatureCollection", features: parishFeatures }, {
+        style: function () {
+          return {
+            color: "#1d4ed8", weight: 1.6, opacity: 0.85,
+            dashArray: "6 4", fillColor: "#3b82f6", fillOpacity: 0.05
+          };
+        },
+        interactive: false
+      }).addTo(this.map);
+
+      this.loadZoneData();
+      var bounds = this.muniLayer.getBounds();
+      this.map.flyToBounds(bounds, { padding: [24, 24], duration: 1.05, maxZoom: 11 });
+      this.setMarker(10.1360, -64.6862, "Barcelona — Simón Bolívar, Anzoátegui");
+      setTimeout(function () { self.map.invalidateSize(true); }, 450);
+
+      var tip = document.getElementById("map-tips");
+      if (tip) {
+        tip.textContent =
+          "Parroquias del municipio. Activa 🌡 Temp., 🌧 Lluvia o 💨 Viento para ver el valor de cada parroquia junto a su nombre (acerca el zoom a nivel 10+). Toca una etiqueta para ver los 3 valores.";
+      }
+    },
+
+    loadZoneData: function () {
+      var self = this;
+      var lats = MUNI_ZONES.map(function (z) { return z.lat; }).join(",");
+      var lons = MUNI_ZONES.map(function (z) { return z.lon; }).join(",");
+      var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lats +
+                "&longitude=" + lons +
+                "&current=temperature_2m,precipitation,wind_speed_10m,wind_direction_10m" +
+                "&temperature_unit=celsius&wind_speed_unit=kmh";
+
+      fetch(url).then(function (r) { return r.json(); }).then(function (data) {
+        var arr = Array.isArray(data) ? data : [data];
+        self.zoneData = MUNI_ZONES.map(function (z, i) {
+          var cur = (arr[i] && arr[i].current) ? arr[i].current : {};
+          return {
+            name: z.name,
+            lat: z.lat,
+            lon: z.lon,
+            z: z.z,
+            t: cur.temperature_2m != null ? cur.temperature_2m : null,
+            rain: cur.precipitation != null ? cur.precipitation : null,
+            wind: cur.wind_speed_10m != null ? cur.wind_speed_10m : null,
+            windDir: cur.wind_direction_10m != null ? cur.wind_direction_10m : null
+          };
+        });
+        self.refreshZoneLabels();
+      }).catch(function () {
+        self.zoneData = MUNI_ZONES.map(function (z) {
+          return { name: z.name, lat: z.lat, lon: z.lon, z: z.z, t: null, rain: null, wind: null, windDir: null };
+        });
+        self.refreshZoneLabels();
+      });
+    },
+
+    refreshZoneLabels: function () {
+      if (!this.zoneGroup || !this.focusMuni || !this.zoneData) return;
+      this.zoneGroup.clearLayers();
+      var zoom = this.map.getZoom();
+      if (zoom < 10) return;
+      var bounds = this.map.getBounds();
+      var self = this;
+
+      var mode = null;
+      if (this.layers.temp) mode = "temp";
+      else if (this.layers.rain) mode = "rain";
+      else if (this.layers.wind) mode = "wind";
+
+      this.zoneData.forEach(function (p) {
+        if (zoom < (p.z || 10)) return;
+        if (p.lat < bounds.getSouth() || p.lat > bounds.getNorth() ||
+            p.lon < bounds.getWest()  || p.lon > bounds.getEast()) return;
+
+        var valueStr = "";
+        var color = "#fff";
+        var arrow = "";
+
+        if (mode === "temp" && p.t != null) {
+          valueStr = Math.round(p.t) + "°";
+          color = "#ffd166";
+        } else if (mode === "rain" && p.rain != null) {
+          valueStr = p.rain.toFixed(1) + " mm";
+          color = "#7ec8ff";
+        } else if (mode === "wind" && p.wind != null) {
+          arrow = API.windArrow(p.windDir);
+          valueStr = arrow + " " + Math.round(p.wind) + " km/h";
+          color = "#b8ffd1";
+        }
+
+        var fs = zoom >= 12 ? 10 : 9;
+        var ts = zoom >= 12 ? 12 : 11;
+        var shadow = "text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 0 3px #000;";
+
+        var html =
+          '<div style="text-align:center;white-space:nowrap;line-height:1.15;pointer-events:none;">' +
+            '<div style="font-size:' + fs + 'px;font-weight:600;color:#fff;' + shadow + '">' +
+              p.name +
+            '</div>' +
+            (valueStr
+              ? '<div style="font-size:' + ts + 'px;font-weight:800;color:' + color + ';' + shadow + '">' +
+                  valueStr +
+                '</div>'
+              : '') +
+          '</div>';
+
+        var icon = L.divIcon({
+          className: "zone-label",
+          html: html,
+          iconSize: [90, 30],
+          iconAnchor: [45, 15]
+        });
+
+        var popup =
+          "<b>" + p.name + "</b><br>" +
+          "🌡 " + (p.t != null ? p.t.toFixed(1) + " °C" : "—") + "<br>" +
+          "🌧 " + (p.rain != null ? p.rain.toFixed(1) + " mm" : "—") + "<br>" +
+          "💨 " + (p.wind != null ? Math.round(p.wind) + " km/h" : "—") +
+          (p.windDir != null ? " (" + API.windArrow(p.windDir) + " " + API.windCardinal(p.windDir) + ")" : "");
+
+        L.marker([p.lat, p.lon], { icon: icon, interactive: true, keyboard: false })
+          .addTo(self.zoneGroup)
+          .bindPopup(popup);
+      });
+    },
+
+    toggle: function (name) {
+      this.layers[name] = !this.layers[name];
+      document.getElementById("btn-" + name).classList.toggle("active", this.layers[name]);
+      if (name === "rain") {
+        if (this.layers.rain) this.showRain();
+        else this.hideRain();
+      }
+      if (name === "temp") {
+        var leg = document.getElementById("temp-legend");
+        if (this.layers.temp) {
+          this.showTemp();
+          if (leg) leg.classList.add("visible");
+        } else {
+          this.hideTemp();
+          if (leg) leg.classList.remove("visible");
+        }
+      }
+      if (name === "wind") {
+        if (this.layers.wind) this.showWind();
+        else this.hideWind();
+      }
+      if (this.focusMuni) this.refreshZoneLabels();
+    },
+
+    showRain: function () {
+      var self = this;
+      this.hideRain();
+      fetch("https://api.rainviewer.com/public/weather-maps.json")
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var frames = (data.radar && data.radar.past) ? data.radar.past : [];
+          if (!frames.length) throw new Error("sin radar");
+          var last = frames[frames.length - 1];
+          var url = data.host + last.path + "/256/{z}/{x}/{y}/2/1_1.png";
+          self.rainLayer = L.tileLayer(url, {
+            opacity: 0.65, maxNativeZoom: 7, maxZoom: 12, attribution: "© RainViewer"
+          }).addTo(self.map);
+        })
+        .catch(function () {
+          App.showError("No se pudo cargar el radar de lluvia.");
+          self.layers.rain = false;
+          document.getElementById("btn-rain").classList.remove("active");
+          if (self.focusMuni) self.refreshZoneLabels();
+        });
+    },
+
+    hideRain: function () {
+      if (this.rainLayer) { this.map.removeLayer(this.rainLayer); this.rainLayer = null; }
+    },
+
+    showTemp: function () {
+      this.hideTemp();
+      var key = (CONFIG.OWM_API_KEY || "").trim();
+      if (!key) {
+        App.showError("Falta la API key de OpenWeatherMap.");
+        this.layers.temp = false;
+        document.getElementById("btn-temp").classList.remove("active");
+        document.getElementById("temp-legend").classList.remove("visible");
+        return;
+      }
+      var opts = { opacity: 1.0, maxZoom: 18, pane: "tempPane", attribution: "© OpenWeatherMap" };
+      this.tempLayer = L.tileLayer(
+        "https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=" + key, opts
+      ).addTo(this.map);
+      this.tempLayer2 = L.tileLayer(
+        "https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=" + key, opts
+      ).addTo(this.map);
+    },
+
+    hideTemp: function () {
+      if (this.tempLayer) { this.map.removeLayer(this.tempLayer); this.tempLayer = null; }
+      if (this.tempLayer2) { this.map.removeLayer(this.tempLayer2); this.tempLayer2 = null; }
+    },
+
+    showWind: function () {
+      this.hideWind();
+      var key = (CONFIG.OWM_API_KEY || "").trim();
+      if (key) {
+        this.windLayer = L.tileLayer(
+          "https://tile.openweathermap.org/map/wind_new/{z}/{x}/{y}.png?appid=" + key,
+          { opacity: 0.32, maxZoom: 18, attribution: "© OpenWeatherMap" }
+        ).addTo(this.map);
+      }
+      this.startWindParticles();
+    },
+
+    hideWind: function () {
+      if (this.windLayer) { this.map.removeLayer(this.windLayer); this.windLayer = null; }
+      this.stopWindParticles();
+    },
+
+    startWindParticles: function () {
+      var self = this;
+      this.stopWindParticles();
+      var mapEl = this.map.getContainer();
+      var canvas = document.createElement("canvas");
+      canvas.style.cssText =
+        "position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:460;";
+      mapEl.appendChild(canvas);
+      this.windParticles = canvas;
+      var ctx = canvas.getContext("2d");
+      var particles = [];
+      var W, H;
+
+      function resize() {
+        var size = self.map.getSize();
+        W = size.x; H = size.y;
+        canvas.width = W; canvas.height = H;
+      }
+      resize();
+
+      function spawn() {
+        return {
+          x: Math.random() * W, y: Math.random() * H,
+          age: Math.random() * 70, maxAge: 55 + Math.random() * 55
+        };
+      }
+      for (var i = 0; i < 420; i++) particles.push(spawn());
+
+      function getWindAt(px, py) {
+        if (!self.windGrid || !self.windGrid.length) return { u: 0.35, v: 0.05 };
+        var latlng = self.map.containerPointToLatLng([px, py]);
+        var best = self.windGrid[0], bestD = 1e12;
+        for (var i = 0; i < self.windGrid.length; i++) {
+          var g = self.windGrid[i];
+          var d = (g.lat - latlng.lat) * (g.lat - latlng.lat) + (g.lon - latlng.lng) * (g.lon - latlng.lng);
+          if (d < bestD) { bestD = d; best = g; }
+        }
+        return { u: best.u, v: best.v };
+      }
+
+      function frame() {
+        if (!self.layers.wind || !self.windParticles) return;
+        ctx.clearRect(0, 0, W, H);
+        ctx.strokeStyle = "rgba(255,255,255,0.78)";
+        ctx.lineWidth = 1.35;
+        ctx.lineCap = "round";
+        for (var i = 0; i < particles.length; i++) {
+          var p = particles[i];
+          var wind = getWindAt(p.x, p.y);
+          var speed = Math.sqrt(wind.u * wind.u + wind.v * wind.v) || 0.12;
+          var len = 5 + speed * 16;
+          var alpha = 1 - p.age / p.maxAge;
+          ctx.globalAlpha = Math.max(0.12, alpha * 0.88);
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p.x - wind.u * len * 0.45, p.y - wind.v * len * 0.45);
+          ctx.stroke();
+          p.x += wind.u * 2.1;
+          p.y += wind.v * 2.1;
+          p.age++;
+          if (p.age > p.maxAge || p.x < -25 || p.x > W + 25 || p.y < -25 || p.y > H + 25) {
+            particles[i] = spawn();
+            particles[i].age = 0;
+          }
+        }
+        ctx.globalAlpha = 1;
+        self.windAnimId = requestAnimationFrame(frame);
+      }
+
+      this.refreshWindParticles().then(function () {
+        if (self.layers.wind) frame();
+      });
+      this._windResize = function () { resize(); };
+      this.map.on("resize", this._windResize);
+    },
+
+    stopWindParticles: function () {
+      if (this.windAnimId) { cancelAnimationFrame(this.windAnimId); this.windAnimId = null; }
+      if (this.windParticles) {
+        if (this.windParticles.parentNode) this.windParticles.parentNode.removeChild(this.windParticles);
+        this.windParticles = null;
+      }
+      if (this._windResize) { this.map.off("resize", this._windResize); this._windResize = null; }
+      this.windGrid = null;
+    },
+
+    refreshWindParticles: function () {
+      var self = this;
+      if (!this.layers.wind) return Promise.resolve();
+      var bounds = this.map.getBounds();
+      var south = bounds.getSouth(), north = bounds.getNorth();
+      var west = bounds.getWest(), east = bounds.getEast();
+      var rows = 5, cols = 7;
+      var points = [];
+      for (var r = 0; r <= rows; r++) {
+        for (var c = 0; c <= cols; c++) {
+          points.push({
+            lat: south + (north - south) * (r / rows),
+            lon: west + (east - west) * (c / cols)
+          });
+        }
+      }
+      var lats = points.map(function (p) { return p.lat; }).join(",");
+      var lons = points.map(function (p) { return p.lon; }).join(",");
+      var url = "https://api.open-meteo.com/v1/forecast?latitude=" + lats +
+                "&longitude=" + lons +
+                "&current=wind_speed_10m,wind_direction_10m&wind_speed_unit=ms";
+      return fetch(url)
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          var arr = Array.isArray(data) ? data : [data];
+          self.windGrid = [];
+          for (var i = 0; i < points.length && i < arr.length; i++) {
+            var cur = arr[i].current || {};
+            var spd = cur.wind_speed_10m != null ? cur.wind_speed_10m : 2;
+            var dir = cur.wind_direction_10m != null ? cur.wind_direction_10m : 90;
+            var rad = (dir + 180) * Math.PI / 180;
+            self.windGrid.push({
+              lat: points[i].lat, lon: points[i].lon,
+              u: Math.sin(rad) * (spd / 8), v: -Math.cos(rad) * (spd / 8)
+            });
+          }
+        })
+        .catch(function () {
+          self.windGrid = points.map(function (p) {
+            return { lat: p.lat, lon: p.lon, u: 0.35, v: 0.08 };
+          });
+        });
+    }
+  };
+
+  var recentChart = null;
+
+  function renderRecentHourly(hourly) {
+    var ctx = document.getElementById("recent-chart");
+    if (!ctx || !hourly || !hourly.time) return;
+    var now = Date.now(), labels = [], temps = [], precips = [];
+    for (var i = 0; i < hourly.time.length; i++) {
+      var t = new Date(hourly.time[i]).getTime();
+      if (t > now || t < now - 48 * 3600000) continue;
+      labels.push(new Date(hourly.time[i]).toLocaleString("es-VE", {
+        day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
+      }));
+      temps.push(hourly.temperature_2m[i]);
+      precips.push(hourly.precipitation[i] != null ? hourly.precipitation[i] : 0);
+    }
+    if (recentChart) recentChart.destroy();
+    recentChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            type: "line", label: "Temp (°C)", data: temps,
+            borderColor: "#e74c3c", backgroundColor: "rgba(231,76,60,0.12)",
+            tension: 0.25, yAxisID: "y", pointRadius: 2, pointHoverRadius: 5, order: 1
+          },
+          {
+            type: "bar", label: "Precip (mm)", data: precips,
+            backgroundColor: "rgba(52,152,219,0.45)", borderColor: "#2980b9",
+            borderWidth: 1, yAxisID: "y1", order: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: { position: "top", labels: { usePointStyle: true, boxWidth: 6, font: { size: 10 } } },
+          zoom: {
+            pan: { enabled: true, mode: "x", modifierKey: null },
+            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: "x" },
+            limits: { x: { min: "original", max: "original" } }
+          },
+          tooltip: {
+            callbacks: {
+              label: function (ctx) {
+                var v = ctx.parsed.y;
+                if (ctx.dataset.label.indexOf("Temp") >= 0) {
+                  return "Temp: " + (v != null ? v.toFixed(1) : "--") + " °C";
+                }
+                return "Precip: " + (v != null ? v.toFixed(1) : "--") + " mm";
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            position: "left", title: { display: true, text: "°C", font: { size: 10 } },
+            grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { size: 9 } }
+          },
+          y1: {
+            position: "right", title: { display: true, text: "mm", font: { size: 10 } },
+            grid: { drawOnChartArea: false }, beginAtZero: true, ticks: { font: { size: 9 } }
+          },
+          x: {
+            grid: { display: false },
+            ticks: { maxRotation: 45, minRotation: 45, font: { size: 8 }, maxTicksLimit: 12 }
+          }
+        }
+      }
+    });
+  }
+
+  var App = {
+    lat: CONFIG.default.lat,
+    lon: CONFIG.default.lon,
+    name: CONFIG.default.name,
+
+    init: function () {
+      var self = this;
+      MapCtrl.init();
+
+      document.getElementById("chart-zoom-in").onclick = function () {
+        if (recentChart) recentChart.zoom(1.3);
+      };
+      document.getElementById("chart-zoom-out").onclick = function () {
+        if (recentChart) recentChart.zoom(0.75);
+      };
+      document.getElementById("chart-reset").onclick = function () {
+        if (recentChart) recentChart.resetZoom();
+      };
+
+      window.addEventListener("loc", function (e) {
+        self.lat = e.detail.lat;
+        self.lon = e.detail.lon;
+        self.name = e.detail.name;
+        self.load();
+      });
+
+      document.getElementById("search-btn").onclick = function () { self.search(); };
+      document.getElementById("search-input").onkeypress = function (e) {
+        if (e.key === "Enter") self.search();
+      };
+
+      document.getElementById("btn-simon-bolivar").onclick = function () {
+        self.lat = 10.1360;
+        self.lon = -64.6862;
+        self.name = "Simón Bolívar, Anzoátegui";
+        document.querySelectorAll(".quick-loc-btn").forEach(function (b) { b.classList.remove("active"); });
+        document.getElementById("btn-simon-bolivar").classList.add("active");
+        MapCtrl.showMunicipioSimonBolivar();
+        self.load();
+      };
+
+      document.getElementById("btn-caracas").onclick = function () {
+        self.goQuick(10.4806, -66.9036, "Caracas, Venezuela", 11, "btn-caracas");
+      };
+      document.getElementById("btn-maracaibo").onclick = function () {
+        self.goQuick(10.6666, -71.6125, "Maracaibo, Zulia", 11, "btn-maracaibo");
+      };
+
+      self.load();
+    },
+
+    goQuick: function (lat, lon, name, zoom, btnId) {
+      this.lat = lat;
+      this.lon = lon;
+      this.name = name;
+      MapCtrl.focusMuni = false;
+      if (MapCtrl.muniLayer) { MapCtrl.map.removeLayer(MapCtrl.muniLayer); MapCtrl.muniLayer = null; }
+      if (MapCtrl.parishLayer) { MapCtrl.map.removeLayer(MapCtrl.parishLayer); MapCtrl.parishLayer = null; }
+      if (MapCtrl.zoneGroup) MapCtrl.zoneGroup.clearLayers();
+      document.querySelectorAll(".quick-loc-btn").forEach(function (b) { b.classList.remove("active"); });
+      if (btnId) document.getElementById(btnId).classList.add("active");
+      MapCtrl.flyTo(lat, lon, zoom);
+      MapCtrl.setMarker(lat, lon, name);
+      this.load();
+      var tip = document.getElementById("map-tips");
+      if (tip) {
+        tip.textContent =
+          "Toca el mapa para ver el clima de ese punto. Usa 📍 Simón Bolívar para el municipio con parroquias y barrios.";
+      }
+    },
+
+    search: function () {
+      var self = this;
+      var q = document.getElementById("search-input").value.trim();
+      if (!q) return;
+      fetch("https://geocoding-api.open-meteo.com/v1/search?name=" +
+        encodeURIComponent(q) + "&count=5&language=es&format=json")
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          if (!d.results || !d.results.length) {
+            self.showError("No se encontró la ubicación.");
+            return;
+          }
+          var p = d.results[0];
+          self.lat = p.latitude;
+          self.lon = p.longitude;
+          self.name = p.name +
+            (p.admin1 ? ", " + p.admin1 : "") +
+            (p.country ? ", " + p.country : "");
+          MapCtrl.focusMuni = false;
+          if (MapCtrl.muniLayer) { MapCtrl.map.removeLayer(MapCtrl.muniLayer); MapCtrl.muniLayer = null; }
+          if (MapCtrl.parishLayer) { MapCtrl.map.removeLayer(MapCtrl.parishLayer); MapCtrl.parishLayer = null; }
+          if (MapCtrl.zoneGroup) MapCtrl.zoneGroup.clearLayers();
+          document.querySelectorAll(".quick-loc-btn").forEach(function (b) { b.classList.remove("active"); });
+          MapCtrl.flyTo(self.lat, self.lon, 11);
+          MapCtrl.setMarker(self.lat, self.lon, self.name);
+          self.load();
+        })
+        .catch(function () { self.showError("Error al buscar. Revisa tu conexión."); });
+    },
+
+    load: function () {
+      var self = this;
+      this.showLoad(true);
+      document.getElementById("location-label").textContent = this.name;
+      Promise.all([
+        API.forecast(this.lat, this.lon),
+        API.airQuality(this.lat, this.lon).catch(function () { return null; })
+      ])
+        .then(function (results) {
+          var fc = results[0], aq = results[1];
+          self.renderCurrent(fc);
+          self.renderHours(fc);
+          self.renderDaily(fc);
+          if (aq) self.renderAQI(aq);
+          if (fc.hourly) renderRecentHourly(fc.hourly);
+          if (MapCtrl.layers.temp) MapCtrl.showTemp();
+          if (MapCtrl.layers.wind) MapCtrl.showWind();
+        })
+        .catch(function () {
+          self.showError("No se pudieron cargar los datos. Revisa tu conexión.");
+          document.getElementById("weather-desc").textContent = "Error de conexión";
+        })
+        .finally(function () { self.showLoad(false); });
+    },
+
+    renderCurrent: function (d) {
+      var c = d.current;
+      if (!c) return;
+      document.getElementById("temp-now").textContent =
+        c.temperature_2m != null ? c.temperature_2m.toFixed(1) : "--";
+      document.getElementById("feels-like").textContent =
+        c.apparent_temperature != null ? c.apparent_temperature.toFixed(1) : "--";
+      document.getElementById("weather-desc").textContent = API.codeText(c.weather_code);
+      document.getElementById("humidity").textContent =
+        (c.relative_humidity_2m != null ? c.relative_humidity_2m : "--") + "%";
+      document.getElementById("pressure").textContent =
+        c.pressure_msl != null ? Math.round(c.pressure_msl) : "--";
+      document.getElementById("wind").textContent =
+        (c.wind_speed_10m != null ? Math.round(c.wind_speed_10m) : "--") + " km/h";
+      document.getElementById("uv").textContent =
+        c.uv_index != null ? c.uv_index.toFixed(1) : "--";
+      document.getElementById("clouds").textContent =
+        (c.cloud_cover != null ? c.cloud_cover : "--") + "%";
+      document.getElementById("visibility").textContent =
+        c.visibility != null ? (c.visibility / 1000).toFixed(1) : "--";
+      if (d.daily && d.daily.sunrise) {
+        var todayStr = new Date().toISOString().slice(0, 10);
+        var i = d.daily.time.indexOf(todayStr);
+        if (i < 0) i = Math.min(2, d.daily.time.length - 1);
+        document.getElementById("sunrise").textContent = new Date(d.daily.sunrise[i])
+          .toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" });
+        document.getElementById("sunset").textContent = new Date(d.daily.sunset[i])
+          .toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" });
+      }
+    },
+
+    renderHours: function (d) {
+      var feat = document.getElementById("hours-featured");
+      var scroll = document.getElementById("hours-scroll");
+      var label = document.getElementById("hours-scroll-label");
+      if (!feat || !scroll || !d.hourly) return;
+      feat.innerHTML = "";
+      scroll.innerHTML = "";
+      var now = Date.now(), future = [];
+      for (var i = 0; i < d.hourly.time.length; i++) {
+        if (new Date(d.hourly.time[i]).getTime() < now - 1800000) continue;
+        future.push(i);
+        if (future.length >= 14) break;
+      }
+      future.forEach(function (idx, n) {
+        var t = new Date(d.hourly.time[idx]);
+        var timeStr = t.toLocaleTimeString("es-VE", { hour: "2-digit", minute: "2-digit" });
+        var icon = API.emoji(d.hourly.weather_code[idx]);
+        var temp = d.hourly.temperature_2m[idx] != null ? Math.round(d.hourly.temperature_2m[idx]) : "--";
+        var precip = d.hourly.precipitation_probability[idx];
+        var html =
+          '<div class="hf-time">' + timeStr + "</div>" +
+          '<div class="hf-icon">' + icon + "</div>" +
+          '<div class="hf-temp">' + temp + "°</div>" +
+          '<div class="hf-precip">' + (precip != null ? precip + "%" : "") + "</div>";
+        if (n < 5) {
+          var el = document.createElement("div");
+          el.className = "hour-feat";
+          el.innerHTML = html;
+          feat.appendChild(el);
+        } else {
+          var el2 = document.createElement("div");
+          el2.className = "hour-card";
+          el2.innerHTML =
+            '<div class="h-time">' + timeStr + "</div>" +
+            '<div class="h-icon">' + icon + "</div>" +
+            '<div class="h-temp">' + temp + "°</div>" +
+            '<div class="h-precip">' + (precip != null ? precip + "%" : "") + "</div>";
+          scroll.appendChild(el2);
+        }
+      });
+      if (label) label.style.display = scroll.children.length === 0 ? "none" : "block";
+    },
+
+    renderDaily: function (d) {
+      var box = document.getElementById("daily-container");
+      if (!box || !d.daily) return;
+      box.innerHTML = "";
+      var todayStr = new Date().toISOString().slice(0, 10);
+      d.daily.time.forEach(function (dateStr, i) {
+        if (dateStr < todayStr) return;
+        var date = new Date(dateStr + "T12:00:00");
+        var name = date.toLocaleDateString("es-VE", { weekday: "short", day: "numeric", month: "short" });
+        var row = document.createElement("div");
+        row.className = "day-row";
+        var maxT = d.daily.temperature_2m_max[i] != null ? Math.round(d.daily.temperature_2m_max[i]) : "--";
+        var minT = d.daily.temperature_2m_min[i] != null ? Math.round(d.daily.temperature_2m_min[i]) : "--";
+        var prec = d.daily.precipitation_sum[i] > 0 ? d.daily.precipitation_sum[i].toFixed(1) + " mm" : "—";
+        var uv = d.daily.uv_index_max[i] != null ? Math.round(d.daily.uv_index_max[i]) : "—";
+        row.innerHTML =
+          '<div class="day-name">' + name + "</div>" +
+          '<div class="day-icon">' + API.emoji(d.daily.weather_code[i]) + "</div>" +
+          '<div class="day-temps"><span class="max">' + maxT + '°</span><span class="min">' + minT + "°</span></div>" +
+          '<div class="day-precip">' + prec + "</div>" +
+          '<div class="day-uv">UV ' + uv + "</div>";
+        box.appendChild(row);
+      });
+    },
+
+    renderAQI: function (d) {
+      var c = d.current;
+      if (!c) return;
+      var aqi = c.european_aqi;
+      var circle = document.getElementById("aqi-circle");
+      circle.textContent = aqi != null ? Math.round(aqi) : "--";
+      circle.style.background = API.aqiColor(aqi);
+      document.getElementById("aqi-label").textContent = API.aqiLabel(aqi);
+      document.getElementById("aqi-desc").textContent = aqi != null ? "Índice AQI europeo" : "";
+      document.getElementById("pm25").textContent = c.pm2_5 != null ? c.pm2_5.toFixed(1) : "--";
+      document.getElementById("pm10").textContent = c.pm10 != null ? c.pm10.toFixed(1) : "--";
+      document.getElementById("o3").textContent = c.ozone != null ? Math.round(c.ozone) : "--";
+    },
+
+    showLoad: function (v) { document.getElementById("loading").style.display = v ? "flex" : "none"; },
+
+    showError: function (msg) {
+      var el = document.getElementById("error-toast");
+      el.textContent = msg || "Error";
+      el.style.display = "block";
+      setTimeout(function () { el.style.display = "none"; }, 4200);
+    }
+  };
+
+  waitLibs(function () {
+    try { App.init(); }
+    catch (e) {
+      document.getElementById("weather-desc").textContent = "Error al iniciar";
+      alert("Error: " + e.message);
+    }
+  });
+})();
+  </script>
+</body>
+</html>
