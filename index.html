@@ -9371,7 +9371,7 @@ var ReportKit = (function () {
       }, 4200);
     },
 
-    /* Flyer PDF con degradados SIGP + emojis (HTML → canvas → PDF) */
+    /* Plantilla única del botón REPORTE PDF: todos los escenarios usan este diseño (HTML → canvas → PDF). */
     downloadFlyerPDF: function () {
       var self = this;
       /* El reporte es el del MUNICIPIO COMPLETO (las 6 parroquias) siempre que
@@ -9577,16 +9577,16 @@ var ReportKit = (function () {
            Se ajustan manteniendo su proporción; el logo derecho tiene un margen
            extra y no se recorta para que se vea completo. Si faltan, no hay
            círculo, caja ni hueco visible en el flyer. */
-        '<div id="flyer-logos" style="display:none;position:absolute;right:66px;top:36px;width:540px;height:110px;' +
+        '<div id="flyer-logos" style="display:none;position:absolute;right:86px;top:36px;width:540px;height:110px;' +
         'align-items:center;justify-content:flex-end;gap:10px;z-index:2;">' +
         '<div style="position:relative;flex:0 0 260px;width:260px;height:108px;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
         '<img src="' + REPORT_LOGO_LEFT_SRC + '" alt="Logo institucional izquierdo" ' +
-        'style="display:none;position:absolute;left:50%;top:50%;width:300px;height:300px;max-width:none;object-fit:contain;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" ' +
+        'style="display:none;position:absolute;left:50%;top:50%;width:315px;height:315px;max-width:none;object-fit:contain;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" ' +
         "onload=\"this.style.display='block';this.parentNode.parentNode.style.display='flex';\" " +
         "onerror=\"this.style.display='none';this.parentNode.style.display='none';\" /></div>" +
-        '<div style="position:relative;left:35px;flex:0 0 270px;width:270px;height:108px;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
+        '<div style="position:relative;left:40px;flex:0 0 270px;width:270px;height:108px;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
         '<img src="' + REPORT_LOGO_RIGHT_SRC + '" alt="Logo institucional derecho" ' +
-        'style="display:none;position:absolute;left:50%;top:51.7%;width:370px;height:462.5px;max-width:none;object-fit:contain;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" ' +
+        'style="display:none;position:absolute;left:50%;top:51.7%;width:385px;height:481.25px;max-width:none;object-fit:contain;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" ' +
         "onload=\"this.style.display='block';this.parentNode.parentNode.style.display='flex';\" " +
         "onerror=\"this.style.display='none';this.parentNode.style.display='none';\" /></div></div>" +
 
