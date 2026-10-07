@@ -1249,7 +1249,25 @@
       </div>
       <div id="map"></div>
       <div id="quakes-panel" class="quakes-panel" style="display:none;">
-        <div class="quakes-panel-title">HISTORIAL SÍSMICO (USGS)</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:3px;">
+          <div class="quakes-panel-title" style="margin:0;">HISTORIAL SÍSMICO (USGS)</div>
+          <div style="position:relative;display:inline-flex;align-items:center;">
+            <button type="button" id="btn-quake-report-menu" title="Selecciona un sismo de Venezuela o su entorno para generar el reporte" aria-haspopup="menu" aria-expanded="false" aria-controls="quake-report-format-menu" aria-disabled="true" disabled style="font-size:0.62rem;font-weight:850;padding:0.34rem 0.55rem;background:#B4D445;color:#0d3d32;border:0;border-radius:7px;cursor:not-allowed;display:inline-flex;align-items:center;gap:5px;opacity:.46;">
+              REPORTE SÍSMICO <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 5 5 5-5"/></svg>
+            </button>
+            <div id="quake-report-format-menu" role="menu" aria-labelledby="btn-quake-report-menu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:2600;min-width:238px;max-width:calc(100vw - 24px);padding:7px;background:#fff;border:1px solid #d8e4dd;border-radius:11px;box-shadow:0 10px 28px rgba(13,61,50,.22);">
+              <button type="button" id="btn-quake-report-pdf" role="menuitem" style="width:100%;display:flex;align-items:center;gap:9px;padding:9px 10px;background:#fff;border:0;border-radius:8px;color:#0d3d32;text-align:left;cursor:pointer;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#2e746b" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5M9 14h6M9 17h4"/></svg>
+                <span style="display:flex;flex-direction:column;gap:2px;"><strong style="font-size:0.72rem;">Descargar en PDF</strong><small style="font-size:0.6rem;color:#6b7e75;">Reporte sísmico listo para compartir</small></span>
+              </button>
+              <button type="button" id="btn-quake-report-png" role="menuitem" style="width:100%;display:flex;align-items:center;gap:9px;padding:9px 10px;background:#fff;border:0;border-radius:8px;color:#0d3d32;text-align:left;cursor:pointer;">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#a77c20" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+                <span style="display:flex;flex-direction:column;gap:2px;"><strong style="font-size:0.72rem;">Descargar PNG · Máxima calidad</strong><small style="font-size:0.6rem;color:#6b7e75;">Hasta 4× de resolución · sin pérdida</small></span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="quake-report-selection" style="margin:2px 0 8px;color:#9fb3a8;font-size:0.6rem;line-height:1.35;">HAZ CLIC EN UN SISMO DE VENEZUELA O SU ENTORNO PARA ACTIVAR EL REPORTE.</div>
         <label class="quakes-filter-label">PERÍODO
           <select id="quake-range">
             <option value="1d">HOY (24 H)</option>
@@ -1456,10 +1474,23 @@
     <div class="card" id="seg-temp">
       <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0.4rem;margin-bottom:0.35rem;">
         <h2 style="margin:0;"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M10 4a2 2 0 0 1 4 0v9.3a4.5 4.5 0 1 1-4 0V4z"/></svg> TEMPERATURA</h2>
-        <button type="button" class="tool-btn" id="btn-flyer-pdf" title="Descargar reporte climático en PDF" style="font-size:0.68rem;font-weight:800;padding:0.4rem 0.65rem;background:#B4D445;color:#0d3d32;border:none;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:0.35rem;">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5"/><path d="M9 14h6"/><path d="M9 17.5h4"/></svg>
-          REPORTE PDF
-        </button>
+        <div style="position:relative;display:inline-flex;align-items:center;">
+          <button type="button" class="tool-btn" id="btn-flyer-menu" title="Elegir el formato del reporte" aria-haspopup="menu" aria-expanded="false" aria-controls="report-format-menu" style="font-size:0.68rem;font-weight:800;padding:0.42rem 0.68rem;background:#B4D445;color:#0d3d32;border:none;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:0.38rem;">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5"/><path d="M9 14h6"/><path d="M9 17.5h4"/></svg>
+            REPORTE
+            <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 5 5 5-5"/></svg>
+          </button>
+          <div id="report-format-menu" role="menu" aria-labelledby="btn-flyer-menu" style="display:none;position:absolute;right:0;top:calc(100% + 8px);z-index:2600;min-width:238px;max-width:calc(100vw - 24px);padding:7px;background:#fff;border:1px solid #d8e4dd;border-radius:12px;box-shadow:0 10px 28px rgba(13,61,50,.2);">
+            <button type="button" id="btn-flyer-pdf" role="menuitem" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 11px;background:#fff;border:0;border-radius:8px;color:#0d3d32;text-align:left;cursor:pointer;">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#2e746b" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5"/><path d="M9 14h6M9 17h4"/></svg>
+              <span style="display:flex;flex-direction:column;gap:2px;"><strong style="font-size:0.73rem;">Descargar en PDF</strong><small style="font-size:0.61rem;color:#6b7e75;">Documento listo para compartir</small></span>
+            </button>
+            <button type="button" id="btn-flyer-png" role="menuitem" style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 11px;background:#fff;border:0;border-radius:8px;color:#0d3d32;text-align:left;cursor:pointer;">
+              <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="#a77c20" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+              <span style="display:flex;flex-direction:column;gap:2px;"><strong style="font-size:0.73rem;">Descargar PNG · Máxima calidad</strong><small style="font-size:0.61rem;color:#6b7e75;">Hasta 4× de resolución · sin pérdida</small></span>
+            </button>
+          </div>
+        </div>
       </div>
       <div class="current-main">
         <div>
@@ -2837,14 +2868,14 @@ var ReportKit = (function () {
           }
         });
       }
-      if (pts.length < 2) return Promise.resolve(null);
+      if (pts.length !== 6) return Promise.resolve(null);
       var p = new URLSearchParams({
         latitude: pts.map(function (x) { return x.lat; }).join(","),
         longitude: pts.map(function (x) { return x.lon; }).join(","),
         current: "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,cloud_cover,pressure_msl,wind_speed_10m,wind_direction_10m,uv_index,visibility,is_day",
         hourly: "temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,is_day",
         daily: "weather_code,temperature_2m_max,temperature_2m_min,apparent_temperature_max,apparent_temperature_min,precipitation_sum,sunrise,sunset,uv_index_max",
-        timezone: "auto", past_days: "2", forecast_days: "5",
+        timezone: "America/Caracas", past_days: "2", forecast_days: "5",
         temperature_unit: "celsius", wind_speed_unit: "kmh", precipitation_unit: "mm"
       });
       return fetch("https://api.open-meteo.com/v1/forecast?" + p, { cache: "no-store" })
@@ -2861,6 +2892,29 @@ var ReportKit = (function () {
           return q;
         })
         .catch(function () { return null; });
+    },
+
+    /* EAQI municipal: promedio de una muestra en cada una de las seis parroquias. */
+    municipalAirQuality: function () {
+      var pts = [];
+      if (typeof PARISH_SAMPLES !== "undefined" && PARISH_SAMPLES) {
+        Object.keys(PARISH_SAMPLES).forEach(function (parr) {
+          var s = PARISH_SAMPLES[parr];
+          for (var i = 0; i < s.length; i++) {
+            if (s[i].label) { pts.push({ lat: s[i].lat, lon: s[i].lon }); break; }
+          }
+        });
+      }
+      if (pts.length !== 6) return Promise.resolve(null);
+      return this.multiAQI(pts).then(function (r) {
+        var arr = Array.isArray(r) ? r : (r ? [r] : []);
+        var vals = arr.map(function (x) {
+          return x && x.current && x.current.european_aqi != null
+            ? Number(x.current.european_aqi) : null;
+        }).filter(function (v) { return v != null && isFinite(v); });
+        if (vals.length !== 6) return null;
+        return { _parroquias: 6, current: { european_aqi: vals.reduce(function (a, b) { return a + b; }, 0) / 6 } };
+      }).catch(function () { return null; });
     },
 
     forecast: function (lat, lon) {
@@ -4132,6 +4186,9 @@ var ReportKit = (function () {
     moverControlesAlSidebar();
   }
 
+  /* Geometría regional simplificada de Natural Earth (110m), integrada para que el mapa del reporte no dependa de mosaicos externos. */
+  var QUAKE_REPORT_MAP_SHAPES = [{"name":"Colombia","polygons":[[[-78.99,1.69],[-78.62,1.77],[-78.66,2.27],[-78.43,2.63],[-77.93,2.7],[-77.13,3.85],[-77.5,4.09],[-77.31,4.67],[-77.53,5.58],[-77.32,5.85],[-77.48,6.69],[-77.88,7.22],[-77.75,7.71],[-77.43,7.64],[-77.24,7.94],[-77.47,8.52],[-77.35,8.67],[-76.84,8.64],[-76.09,9.34],[-75.67,9.44],[-75.48,10.62],[-74.91,11.08],[-74.28,11.1],[-74.2,11.31],[-73.41,11.23],[-71.75,12.44],[-71.4,12.38],[-71.14,12.11],[-71.33,11.78],[-71.97,11.61],[-72.91,10.45],[-73.3,9.15],[-72.79,9.09],[-72.44,8.41],[-72.44,7.42],[-71.96,6.99],[-70.09,6.96],[-69.39,6.1],[-67.7,6.27],[-67.34,6.1],[-67.74,5.22],[-67.82,4.5],[-67.3,3.32],[-67.81,2.82],[-67.18,2.25],[-66.88,1.25],[-67.07,1.13],[-67.54,2.04],[-67.87,1.69],[-69.82,1.71],[-69.8,1.09],[-69.22,0.99],[-69.25,0.6],[-70.02,0.54],[-70.02,-0.19],[-69.58,-0.55],[-69.42,-1.12],[-69.89,-4.3],[-70.39,-3.77],[-70.69,-3.74],[-70.05,-2.73],[-70.81,-2.26],[-71.41,-2.34],[-71.77,-2.17],[-72.33,-2.43],[-73.07,-2.31],[-73.66,-1.26],[-75.11,-0.06],[-75.37,-0.15],[-76.29,0.42],[-76.58,0.26],[-77.42,0.4],[-77.67,0.83],[-78.86,1.38],[-78.99,1.69]]]},{"name":"Brazil","polygons":[[[-73.99,-7.52],[-73.72,-7.34],[-73.72,-6.92],[-73.12,-6.63],[-73.22,-6.09],[-72.89,-5.27],[-70.79,-4.25],[-69.89,-4.3],[-69.42,-1.12],[-69.58,-0.55],[-70.02,-0.19],[-70.02,0.54],[-69.25,0.6],[-69.22,0.99],[-69.8,1.09],[-69.82,1.71],[-67.87,1.69],[-67.54,2.04],[-67.07,1.13],[-66.88,1.25],[-66.33,0.72],[-65.55,0.79],[-65.35,1.1],[-64.2,1.49],[-64.08,1.92],[-63.37,2.2],[-63.42,2.41],[-64.27,2.5],[-64.37,3.8],[-64.82,4.06],[-64.63,4.15],[-63.09,3.77],[-62.8,4.01],[-60.97,4.54],[-60.6,4.92],[-60.73,5.2],[-60.21,5.24],[-59.98,5.01],[-60.11,4.57],[-59.77,4.42],[-59.54,3.96],[-59.82,3.61],[-59.97,2.76],[-59.65,1.79],[-59.03,1.32],[-58.54,1.27],[-57.34,1.95],[-56.0,1.82],[-55.97,2.51],[-55.1,2.52],[-54.09,2.11],[-53.78,2.38],[-53.42,2.05],[-52.94,2.12],[-52.56,2.5],[-51.66,4.16],[-51.32,4.2],[-50.51,1.9],[-49.97,1.74],[-49.95,1.05],[-50.7,0.22],[-50.39,-0.08],[-48.62,-0.24],[-48.58,-1.24],[-47.82,-0.58],[-44.91,-1.55],[-44.42,-2.14],[-44.58,-2.69],[-43.42,-2.38],[-41.47,-2.91],[-39.98,-2.87],[-38.5,-3.7],[-37.22,-4.82],[-36.45,-5.11],[-35.6,-5.15],[-35.24,-5.46],[-34.73,-7.34],[-35.13,-9.0],[-37.05,-11.04],[-38.42,-13.04],[-38.67,-13.06],[-38.95,-13.79],[-38.88,-15.67],[-39.27,-17.87],[-39.58,-18.26],[-39.76,-19.6],[-40.77,-20.9],[-40.94,-21.94],[-41.75,-22.37],[-41.99,-22.97],[-43.07,-22.97],[-44.65,-23.35],[-45.35,-23.8],[-46.47,-24.09],[-47.65,-24.89],[-48.5,-25.88],[-48.64,-26.62],[-48.47,-27.18],[-48.89,-28.67],[-49.59,-29.22],[-50.7,-30.98],[-52.26,-32.25],[-52.71,-33.2],[-53.37,-33.77],[-53.65,-33.2],[-53.21,-32.73],[-53.79,-32.05],[-55.6,-30.85],[-55.97,-30.88],[-56.98,-30.11],[-57.63,-30.22],[-55.16,-27.88],[-53.65,-26.92],[-53.63,-26.12],[-54.13,-25.55],[-54.63,-25.74],[-54.29,-24.02],[-54.65,-23.84],[-55.4,-23.96],[-55.8,-22.36],[-56.47,-22.09],[-56.88,-22.28],[-57.94,-22.09],[-57.87,-20.73],[-58.17,-20.18],[-57.85,-19.97],[-57.95,-19.4],[-57.5,-18.17],[-57.73,-17.55],[-58.28,-17.27],[-58.39,-16.88],[-58.24,-16.3],[-60.16,-16.26],[-60.54,-15.09],[-60.25,-15.08],[-60.5,-13.78],[-61.08,-13.48],[-61.71,-13.49],[-62.8,-13.0],[-63.2,-12.63],[-64.32,-12.46],[-65.4,-11.57],[-65.34,-9.76],[-66.65,-9.93],[-68.05,-10.71],[-68.27,-11.01],[-70.55,-11.01],[-70.48,-9.49],[-71.3,-10.08],[-72.18,-10.05],[-72.56,-9.52],[-73.23,-9.46],[-73.02,-9.03],[-73.57,-8.42],[-73.99,-7.52]]]},{"name":"Guyana","polygons":[[[-61.41,5.96],[-61.14,6.23],[-61.16,6.7],[-60.3,7.04],[-60.64,7.42],[-60.55,7.78],[-59.76,8.37],[-59.1,8.0],[-58.48,7.35],[-58.45,6.83],[-58.08,6.81],[-57.15,5.97],[-57.31,5.07],[-57.91,4.81],[-58.04,4.06],[-57.6,3.33],[-57.28,3.33],[-57.15,2.77],[-56.54,1.9],[-57.34,1.95],[-58.54,1.27],[-59.03,1.32],[-59.65,1.79],[-59.97,2.76],[-59.82,3.61],[-59.54,3.96],[-59.77,4.42],[-60.11,4.57],[-59.98,5.01],[-60.21,5.24],[-60.73,5.2],[-61.41,5.96]]]},{"name":"Suriname","polygons":[[[-58.04,4.06],[-57.91,4.81],[-57.31,5.07],[-57.15,5.97],[-55.95,5.77],[-55.84,5.95],[-55.03,6.03],[-53.96,5.76],[-54.48,4.9],[-54.4,4.21],[-54.01,3.62],[-54.52,2.31],[-55.1,2.52],[-55.97,2.51],[-56.0,1.82],[-56.54,1.9],[-57.15,2.77],[-57.28,3.33],[-57.6,3.33],[-58.04,4.06]]]},{"name":"Trinidad and Tobago","polygons":[[[-61.95,10.09],[-61.66,10.37],[-61.68,10.76],[-60.9,10.86],[-60.94,10.11],[-61.95,10.09]]]},{"name":"Venezuela","polygons":[[[-73.3,9.15],[-72.91,10.45],[-71.97,11.61],[-71.33,11.78],[-71.36,11.54],[-71.95,11.42],[-71.62,10.97],[-71.63,10.45],[-72.07,9.87],[-71.7,9.07],[-71.26,9.14],[-71.04,9.86],[-71.35,10.21],[-71.4,10.97],[-70.16,11.38],[-70.29,11.85],[-69.94,12.16],[-69.58,11.46],[-68.88,11.44],[-68.23,10.89],[-68.19,10.55],[-66.23,10.65],[-65.66,10.2],[-64.89,10.08],[-64.33,10.39],[-64.32,10.64],[-61.88,10.72],[-62.73,10.42],[-62.39,9.95],[-61.59,9.87],[-60.83,9.38],[-60.67,8.58],[-60.15,8.6],[-59.76,8.37],[-60.55,7.78],[-60.64,7.42],[-60.3,7.04],[-61.16,6.7],[-61.14,6.23],[-61.41,5.96],[-60.6,4.92],[-60.97,4.54],[-62.8,4.01],[-63.09,3.77],[-64.63,4.15],[-64.82,4.06],[-64.37,3.8],[-64.27,2.5],[-63.42,2.41],[-63.37,2.2],[-64.08,1.92],[-64.2,1.49],[-65.35,1.1],[-65.55,0.79],[-66.33,0.72],[-66.88,1.25],[-67.18,2.25],[-67.81,2.82],[-67.3,3.32],[-67.82,4.5],[-67.74,5.22],[-67.34,6.1],[-67.7,6.27],[-69.39,6.1],[-70.09,6.96],[-71.96,6.99],[-72.44,7.42],[-72.44,8.41],[-72.79,9.09],[-73.3,9.15]]]}];
+
   var MapCtrl = {
     map: null,
     marker: null,
@@ -4168,6 +4225,7 @@ var ReportKit = (function () {
     layers: { rain: false, temp: false, wind: false, clouds: false, hurricane: false, faults: false, quakes: false },
     quakeGroup: null,
     quakeWaves: null,
+    selectedQuake: null,
     quakeAlarmOn: true,
     windColor: "#78dcff",
     hurricaneGroup: null,
@@ -7755,6 +7813,35 @@ var ReportKit = (function () {
       );
     },
 
+    quakeIsInVenezuelaReportRegion: function (q) {
+      return !!(q && isFinite(Number(q.lat)) && isFinite(Number(q.lon)) &&
+        Number(q.lat) >= -5 && Number(q.lat) <= 16 && Number(q.lon) >= -80 && Number(q.lon) <= -54);
+    },
+
+    updateQuakeReportSelection: function () {
+      var btn = document.getElementById("btn-quake-report-menu");
+      var status = document.getElementById("quake-report-selection");
+      var q = this.selectedQuake;
+      var inRegion = this.quakeIsInVenezuelaReportRegion(q) && q.mag != null && isFinite(Number(q.mag));
+      if (btn) {
+        btn.disabled = !inRegion;
+        btn.setAttribute("aria-disabled", inRegion ? "false" : "true");
+        btn.style.opacity = inRegion ? "1" : ".46";
+        btn.style.cursor = inRegion ? "pointer" : "not-allowed";
+      }
+      if (!status) return;
+      if (!q) {
+        status.textContent = "HAZ CLIC EN UN SISMO DE VENEZUELA O SU ENTORNO PARA ACTIVAR EL REPORTE.";
+      } else if (!this.quakeIsInVenezuelaReportRegion(q)) {
+        status.textContent = "EL EPICENTRO ESTÁ FUERA DEL MAPA REGIONAL DE VENEZUELA; SELECCIONA UNO LOCAL O CERCANO.";
+      } else if (q.mag == null || !isFinite(Number(q.mag))) {
+        status.textContent = "EL USGS NO REPORTÓ MAGNITUD PARA ESTE EVENTO.";
+      } else {
+        var place = this.quakePlaceEs((q.properties || {}).place || "ZONA SÍSMICA");
+        status.textContent = "SELECCIONADO · M" + Number(q.mag).toFixed(1) + " · " + place;
+      }
+    },
+
     showQuakes: function () {
       var self = this;
       this.hideQuakes(true);
@@ -7823,7 +7910,17 @@ var ReportKit = (function () {
             })
               .bindPopup(html, { maxWidth: 300 })
               .addTo(self.quakeGroup);
-            mk.on("click", function () { self.showQuakeWaves(c[1], c[0], mag); });
+            var reportEvent = {
+              eventId: f.id || p.code || "",
+              lat: Number(c[1]), lon: Number(c[0]), depthKm: c[2] != null ? Number(c[2]) : null,
+              mag: mag != null ? Number(mag) : null,
+              properties: p, periodLabel: periodLabel, effectiveMag: effectiveMag
+            };
+            mk.on("click", function () {
+              self.selectedQuake = reportEvent;
+              self.updateQuakeReportSelection();
+              self.showQuakeWaves(reportEvent.lat, reportEvent.lon, reportEvent.mag);
+            });
           });
           if (countEl) {
             countEl.textContent =
@@ -7851,18 +7948,22 @@ var ReportKit = (function () {
         });
     },
 
+    /* Radios de referencia compartidos por el mapa interactivo y el reporte. */
+    quakeWaveRadii: function (mag) {
+      var m = mag != null ? Number(mag) : 0;
+      if (m >= 7) return [400, 900, 1800];
+      if (m >= 6) return [200, 500, 1000];
+      if (m >= 5) return [100, 250, 500];
+      if (m >= 4) return [50, 120, 250];
+      if (m >= 3) return [25, 60, 120];
+      return [10, 25, 50];
+    },
+
     /* Ondas de afectación: anillos concéntricos según la magnitud */
     showQuakeWaves: function (lat, lon, mag) {
       this.clearQuakeWaves();
       if (lat == null || lon == null) return;
-      var m = mag != null ? Number(mag) : 0;
-      var rings;
-      if (m >= 7) rings = [400, 900, 1800];
-      else if (m >= 6) rings = [200, 500, 1000];
-      else if (m >= 5) rings = [100, 250, 500];
-      else if (m >= 4) rings = [50, 120, 250];
-      else if (m >= 3) rings = [25, 60, 120];
-      else rings = [10, 25, 50];
+      var rings = this.quakeWaveRadii(mag);
       var colors = ["#ef4444", "#f97316", "#eab308"];
       var self = this;
       this.quakeWaves = L.layerGroup().addTo(this.map);
@@ -7903,6 +8004,8 @@ var ReportKit = (function () {
         } catch (e) {}
         this.quakeGroup = null;
       }
+      this.selectedQuake = null;
+      this.updateQuakeReportSelection();
       if (!keepPanel) {
         var qp = document.getElementById('quakes-panel');
         if (qp) qp.style.display = 'none';
@@ -8714,23 +8817,87 @@ var ReportKit = (function () {
           applyChartScroll(parseFloat(this.value) || 0);
         };
       }
-      var btnFlyer = document.getElementById("btn-flyer-pdf");
-      if (btnFlyer) {
-        btnFlyer.onclick = function () {
-          try { self.downloadFlyerPDF(); }
-          catch (eF) {
-            console.error(eF);
-            self.showError("NO SE PUDO GENERAR EL PDF. RECARGA E INTENTA DE NUEVO.");
-          }
-        };
+      var btnFlyer = document.getElementById("btn-flyer-menu");
+      var reportFormatMenu = document.getElementById("report-format-menu");
+      var btnFlyerPDF = document.getElementById("btn-flyer-pdf");
+      var btnFlyerPNG = document.getElementById("btn-flyer-png");
+      function closeReportFormatMenu() {
+        if (reportFormatMenu) reportFormatMenu.style.display = "none";
+        if (btnFlyer) btnFlyer.setAttribute("aria-expanded", "false");
       }
+      function startReportDownload(format) {
+        closeReportFormatMenu();
+        try { self.downloadFlyer(format); }
+        catch (eF) {
+          console.error(eF);
+          self.showError("NO SE PUDO GENERAR EL REPORTE. RECARGA E INTENTA DE NUEVO.");
+        }
+      }
+      if (btnFlyer && reportFormatMenu) {
+        btnFlyer.onclick = function (e) {
+          e.stopPropagation();
+          var open = reportFormatMenu.style.display !== "block";
+          reportFormatMenu.style.display = open ? "block" : "none";
+          btnFlyer.setAttribute("aria-expanded", open ? "true" : "false");
+        };
+        document.addEventListener("click", function (e) {
+          if (!reportFormatMenu.contains(e.target) && e.target !== btnFlyer) closeReportFormatMenu();
+        });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") closeReportFormatMenu();
+        });
+      }
+      if (btnFlyerPDF) btnFlyerPDF.onclick = function () { startReportDownload("pdf"); };
+      if (btnFlyerPNG) btnFlyerPNG.onclick = function () { startReportDownload("png"); };
+
+      var quakeReportMenuButton = document.getElementById("btn-quake-report-menu");
+      var quakeReportFormatMenu = document.getElementById("quake-report-format-menu");
+      var quakeReportPDF = document.getElementById("btn-quake-report-pdf");
+      var quakeReportPNG = document.getElementById("btn-quake-report-png");
+      function closeQuakeReportMenu() {
+        if (quakeReportFormatMenu) quakeReportFormatMenu.style.display = "none";
+        if (quakeReportMenuButton) quakeReportMenuButton.setAttribute("aria-expanded", "false");
+      }
+      function startQuakeReport(format) {
+        closeQuakeReportMenu();
+        var selectedQuake = MapCtrl.selectedQuake;
+        if (!selectedQuake || !MapCtrl.quakeIsInVenezuelaReportRegion(selectedQuake)) {
+          self.showError("SELECCIONA UN SISMO DE VENEZUELA O SU ENTORNO EN EL MAPA.");
+          return;
+        }
+        try { self.downloadQuakeReport(format, selectedQuake); }
+        catch (eQReport) {
+          console.error(eQReport);
+          self.showError("NO SE PUDO GENERAR EL REPORTE SÍSMICO. INTENTA DE NUEVO.");
+        }
+      }
+      if (quakeReportMenuButton && quakeReportFormatMenu) {
+        quakeReportMenuButton.onclick = function (e) {
+          e.stopPropagation();
+          if (quakeReportMenuButton.disabled) return;
+          var open = quakeReportFormatMenu.style.display !== "block";
+          quakeReportFormatMenu.style.display = open ? "block" : "none";
+          quakeReportMenuButton.setAttribute("aria-expanded", open ? "true" : "false");
+        };
+        document.addEventListener("click", function (e) {
+          if (!quakeReportFormatMenu.contains(e.target) && e.target !== quakeReportMenuButton) closeQuakeReportMenu();
+        });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape") {
+            closeQuakeReportMenu();
+            if (quakeReportMenuButton) quakeReportMenuButton.focus();
+          }
+        });
+      }
+      if (quakeReportPDF) quakeReportPDF.onclick = function () { startQuakeReport("pdf"); };
+      if (quakeReportPNG) quakeReportPNG.onclick = function () { startQuakeReport("png"); };
 
       window.addEventListener("loc", function (e) {
         self.lat = e.detail.lat;
         self.lon = e.detail.lon;
         self.name = e.detail.name;
-        /* punto concreto (clic en el mapa): el reporte vuelve a ser del punto
-           y el promedio municipal se recalculará cuando se reactive el modo */
+        /* El punto actualiza la vista del mapa; REPORTE siempre usa el
+           promedio municipal de las seis parroquias, sin importar la selección. */
         self._enMunicipio = false;
         self._muniForecast = null;
         self._muniTried = false;
@@ -8959,6 +9126,9 @@ var ReportKit = (function () {
     _suggestResults: [],
     _muniForecast: null,
     _muniTried: false,
+    _pdfMunicipalReady: false,
+    _pdfMunicipalLoading: false,
+    _pdfMunicipalAQI: null,
     _enMunicipio: false,
 
     hideSuggest: function () {
@@ -9371,42 +9541,488 @@ var ReportKit = (function () {
       }, 4200);
     },
 
-    /* Plantilla única del botón REPORTE PDF: todos los escenarios usan este diseño (HTML → canvas → PDF). */
-    downloadFlyerPDF: function () {
+    /* Reporte sísmico para el evento seleccionado en el mapa. */
+    downloadQuakeReport: function (format, selected) {
       var self = this;
-      /* El reporte es el del MUNICIPIO COMPLETO (las 6 parroquias) siempre que
-         el mapa esté enfocado en "Municipio Simón Bolívar". La primera vez se
-         traen los 6 puntos y se promedian; después quedan en caché. Si algo
-         falla, el reporte se genera igual con el punto seleccionado. */
-      var enMunicipio = !!this._enMunicipio ||
-        /sim[oó]n\s*bol[ií]var/i.test(this.name || "");
-      if (enMunicipio && !this._muniForecast && !this._muniTried) {
-        this._muniTried = true;
+      var outputFormat = String(format || "pdf").toLowerCase() === "png" ? "png" : "pdf";
+      var captureScale = outputFormat === "png" ? 4 : 2;
+      var quake = selected || MapCtrl.selectedQuake;
+      if (!quake || !MapCtrl.quakeIsInVenezuelaReportRegion(quake) || quake.mag == null || !isFinite(Number(quake.mag))) {
+        this.showError("SELECCIONA UN SISMO CON MAGNITUD EN VENEZUELA O SU ENTORNO.");
+        return;
+      }
+      if (typeof html2canvas !== "function" || (outputFormat === "pdf" && (!window.jspdf || !window.jspdf.jsPDF))) {
+        this.showError(outputFormat === "pdf"
+          ? "LIBRERÍAS PDF NO DISPONIBLES. REVISA TU CONEXIÓN."
+          : "NO SE PUDO CARGAR LA LIBRERÍA DE IMAGEN. REVISA TU CONEXIÓN.");
+        return;
+      }
+
+      var props = quake.properties || {};
+      var lat = Number(quake.lat), lon = Number(quake.lon), mag = Number(quake.mag);
+      var depth = quake.depthKm != null ? Number(quake.depthKm) : (props.depth != null ? Number(props.depth) : null);
+      var magInfo = MapCtrl.quakeMagInfo(mag);
+      var place = MapCtrl.quakePlaceEs(props.place || "Venezuela");
+      var rings = MapCtrl.quakeWaveRadii(mag);
+      var waveColors = ["#ef4444", "#f97316", "#eab308"];
+      var eventDate = props.time != null ? new Date(Number(props.time)) : null;
+      if (!eventDate || !isFinite(eventDate.getTime())) eventDate = null;
+      var eventWhen = eventDate
+        ? new Intl.DateTimeFormat("es-VE", {
+            timeZone: "America/Caracas", weekday: "long", year: "numeric", month: "long", day: "numeric",
+            hour: "2-digit", minute: "2-digit"
+          }).format(eventDate)
+        : "FECHA Y HORA NO REPORTADAS";
+      var eventDateKey = eventDate ? eventDate.toISOString().slice(0, 10) : new Date().toISOString().slice(0, 10);
+      var generatedDate = new Intl.DateTimeFormat("es-VE", {
+        timeZone: "America/Caracas", day: "numeric", month: "long", year: "numeric"
+      }).format(new Date());
+      var latText = Math.abs(lat).toFixed(5) + "° " + (lat >= 0 ? "N" : "S");
+      var lonText = Math.abs(lon).toFixed(5) + "° " + (lon >= 0 ? "E" : "O");
+      var coordsText = latText + " · " + lonText;
+      var depthText = MapCtrl.quakeDepthInfo(depth);
+      var magType = MapCtrl.quakeMagTypeEs(props.magType);
+      var feltText = props.felt != null ? Number(props.felt).toLocaleString("es-VE") + " REPORTES" : "SIN REPORTES DE PERCEPCIÓN";
+      var tsunamiText = props.tsunami === 1 || props.tsunami === true ? "BANDERA USGS: POSIBLE" : (props.tsunami === 0 ? "SIN BANDERA USGS" : "SIN DATO USGS");
+      var alertMap = { green: "VERDE", yellow: "AMARILLA", orange: "NARANJA", red: "ROJA" };
+      var pagerText = props.alert ? (alertMap[String(props.alert).toLowerCase()] || String(props.alert).toUpperCase()) : "NO EMITIDA";
+      function esc(value) {
+        return String(value == null ? "" : value).replace(/[&<>\"']/g, function (ch) {
+          return { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" }[ch];
+        });
+      }
+      var placeTitleHTML = esc(place.toUpperCase());
+      function iconoReporteSismico(tipo, size) {
+        size = size || 36;
+        var line = "";
+        if (tipo === "pin") {
+          line = '<path d="M32 56S14 39 14 24a18 18 0 1 1 36 0C50 39 32 56 32 56Z" fill="#D8EDF2" stroke="#2D718A" stroke-width="3" stroke-linejoin="round"/><circle cx="32" cy="24" r="7" fill="#E9B45B" stroke="#A77C20" stroke-width="2.5"/>';
+        } else if (tipo === "magnitude") {
+          line = '<rect x="11" y="12" width="42" height="40" rx="9" fill="#EEF6F8" stroke="#2D718A" stroke-width="3"/><path d="M17 34h8l5-11 7 19 6-12h7" fill="none" stroke="#B75F4D" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>';
+        } else if (tipo === "quake") {
+          line = '<circle cx="32" cy="32" r="25" fill="#FFF6E4" stroke="#A77C20" stroke-width="2.8"/><path d="M10 34h11l5-12 8 22 6-14h14" fill="none" stroke="#2D718A" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M17 50h30" stroke="#A77C20" stroke-width="2.5" stroke-linecap="round"/>';
+        } else if (tipo === "depth") {
+          line = '<path d="M32 9v46M22 19 32 9l10 10M22 45l10 10 10-10" fill="none" stroke="#2D718A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>';
+        } else if (tipo === "type") {
+          line = '<path d="M12 52h41M17 47V34h7v13M29 47V23h7v24M41 47V14h7v33" fill="#D8EDF2" stroke="#2D718A" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/><path d="m16 27 11-8 9 3 13-10" fill="none" stroke="#A77C20" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>';
+        } else if (tipo === "people") {
+          line = '<circle cx="32" cy="20" r="8" fill="#E9B45B" stroke="#A77C20" stroke-width="2.5"/><circle cx="15" cy="28" r="6" fill="#D8EDF2" stroke="#2D718A" stroke-width="2.3"/><circle cx="49" cy="28" r="6" fill="#D8EDF2" stroke="#2D718A" stroke-width="2.3"/><path d="M17 51c0-11 6-17 15-17s15 6 15 17M4 50c0-8 4-13 11-13 3 0 5 1 7 3M60 50c0-8-4-13-11-13-3 0-5 1-7 3" fill="#EEF6F8" stroke="#2D718A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+        } else if (tipo === "wave") {
+          line = '<path d="M7 23c7 0 7-7 14-7s7 7 14 7 7-7 14-7 7 7 8 7M7 35c7 0 7-7 14-7s7 7 14 7 7-7 14-7 7 7 8 7M7 47c7 0 7-7 14-7s7 7 14 7 7-7 14-7 7 7 8 7" fill="none" stroke="#2D718A" stroke-width="3.4" stroke-linecap="round"/><circle cx="49" cy="13" r="5" fill="#E9B45B" stroke="#A77C20" stroke-width="2"/>';
+        }
+        return '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 64 64" style="display:block;width:' + size + 'px;height:' + size + 'px;flex:0 0 auto;">' + line + '</svg>';
+      }
+      var iconoPinReporte = iconoReporteSismico("pin", 40);
+      var iconoMagnitudReporte = iconoReporteSismico("magnitude", 42);
+      var iconoSismoReporte = iconoReporteSismico("quake", 82);
+      var iconoProfundidadReporte = iconoReporteSismico("depth", 17);
+      var iconoTipoReporte = iconoReporteSismico("type", 17);
+      var iconoPercepcionReporte = iconoReporteSismico("people", 17);
+      var iconoTsunamiReporte = iconoReporteSismico("wave", 17);
+
+      function mapaVenezuelaSVG() {
+        var W = 960, H = 650, margin = 26;
+        var outerKm = rings[rings.length - 1];
+        var latRad = lat * Math.PI / 180;
+        var radiusLat = outerKm / 111.32 + 1.2;
+        var radiusLon = outerKm / (111.32 * Math.max(0.25, Math.cos(latRad))) + 1.5;
+        var west = Math.min(-78.5, lon - radiusLon);
+        var east = Math.max(-54.5, lon + radiusLon);
+        var south = Math.min(-4, lat - radiusLat);
+        var north = Math.max(15.5, lat + radiusLat);
+        var midLat = (south + north) / 2;
+        var cosMid = Math.cos(midLat * Math.PI / 180);
+        var spanX = (east - west) * cosMid;
+        var spanY = north - south;
+        var scale = Math.min((W - margin * 2) / spanX, (H - margin * 2) / spanY);
+        var offsetX = (W - spanX * scale) / 2;
+        var offsetY = (H - spanY * scale) / 2;
+        function project(xLon, yLat) {
+          return {
+            x: offsetX + (xLon - west) * cosMid * scale,
+            y: H - offsetY - (yLat - south) * scale
+          };
+        }
+        function num(n) { return Math.round(n * 10) / 10; }
+        function polygonPath(poly) {
+          if (!poly || !poly.length) return "";
+          var first = project(poly[0][0], poly[0][1]);
+          var d = "M" + num(first.x) + " " + num(first.y);
+          for (var pi = 1; pi < poly.length; pi++) {
+            var pt = project(poly[pi][0], poly[pi][1]);
+            d += "L" + num(pt.x) + " " + num(pt.y);
+          }
+          return d + "Z";
+        }
+        var gridStep = (east - west) > 33 ? 10 : 5;
+        var grid = "";
+        for (var glon = Math.ceil(west / gridStep) * gridStep; glon <= east; glon += gridStep) {
+          var gp1 = project(glon, south), gp2 = project(glon, north);
+          grid += '<line x1="' + num(gp1.x) + '" y1="' + num(gp1.y) + '" x2="' + num(gp2.x) + '" y2="' + num(gp2.y) + '" stroke="#c7dce1" stroke-width="1" stroke-dasharray="3 7" opacity=".7"/>';
+        }
+        for (var glat = Math.ceil(south / gridStep) * gridStep; glat <= north; glat += gridStep) {
+          var gq1 = project(west, glat), gq2 = project(east, glat);
+          grid += '<line x1="' + num(gq1.x) + '" y1="' + num(gq1.y) + '" x2="' + num(gq2.x) + '" y2="' + num(gq2.y) + '" stroke="#c7dce1" stroke-width="1" stroke-dasharray="3 7" opacity=".7"/>';
+        }
+        var shapes = "", venezuelaOutline = "";
+        QUAKE_REPORT_MAP_SHAPES.forEach(function (shape) {
+          var isVenezuela = shape.name === "Venezuela";
+          var d = shape.polygons.map(polygonPath).join("");
+          shapes += '<path d="' + d + '" fill="' + (isVenezuela ? "#d9e9b4" : "#f5f7f2") + '" stroke="' + (isVenezuela ? "#2d715d" : "#aebfb8") + '" stroke-width="' + (isVenezuela ? "2.6" : "1.5") + '" stroke-linejoin="round" fill-rule="evenodd"/>';
+          if (isVenezuela) venezuelaOutline = '<path d="' + d + '" fill="none" stroke="#245b52" stroke-width="3.2" stroke-linejoin="round"/>';
+        });
+        var center = project(lon, lat);
+        var ellipses = "";
+        for (var ri = rings.length - 1; ri >= 0; ri--) {
+          var km = rings[ri];
+          var cosEpicenter = Math.max(0.25, Math.cos(latRad));
+          var rx = (km / 111.32) * cosMid / cosEpicenter * scale;
+          var ry = (km / 111.32) * scale;
+          ellipses += '<ellipse cx="' + num(center.x) + '" cy="' + num(center.y) + '" rx="' + num(rx) + '" ry="' + num(ry) + '" fill="' + waveColors[ri] + '" fill-opacity="' + (ri === 0 ? ".08" : ".025") + '" stroke="' + waveColors[ri] + '" stroke-width="3" stroke-dasharray="10 8" opacity=".95"/>';
+        }
+        var labels = "";
+        [
+          ["COLOMBIA", -75.4, 4.3], ["VENEZUELA", -66.3, 7.5], ["GUYANA", -58.4, 5.4],
+          ["SURINAM", -55.3, 4.1], ["BRASIL", -64.4, -2.0], ["TRINIDAD Y TOBAGO", -60.3, 12.8]
+        ].forEach(function (item) {
+          var lp = project(item[1], item[2]);
+          var vn = item[0] === "VENEZUELA";
+          labels += '<text x="' + num(lp.x) + '" y="' + num(lp.y) + '" text-anchor="middle" font-family="Arial,sans-serif" font-size="' + (vn ? "16" : "13") + '" font-weight="900" letter-spacing="1.1" fill="' + (vn ? "#245b52" : "#82958e") + '" opacity=".92">' + item[0] + '</text>';
+        });
+        var caribe = project(-67.3, 14.1);
+        labels += '<text x="' + num(caribe.x) + '" y="' + num(caribe.y) + '" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" font-style="italic" letter-spacing="2" fill="#6593a2" opacity=".8">MAR CARIBE</text>';
+        var marker = '<circle cx="' + num(center.x) + '" cy="' + num(center.y) + '" r="23" fill="none" stroke="#ef4444" stroke-width="3" opacity=".35"/>' +
+          '<circle cx="' + num(center.x) + '" cy="' + num(center.y) + '" r="15" fill="#f97316" stroke="#fff" stroke-width="4"/>' +
+          '<text x="' + num(center.x) + '" y="' + num(center.y + 4.5) + '" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" font-weight="900" fill="#fff">' + mag.toFixed(1) + '</text>';
+        return '<svg xmlns="http://www.w3.org/2000/svg" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Mapa de Venezuela con epicentro y anillos de alcance referencial">' +
+          '<rect width="' + W + '" height="' + H + '" rx="22" fill="#eaf3f6"/>' + grid + shapes + ellipses + venezuelaOutline + labels + marker + '</svg>';
+      }
+
+      var mapSVG = mapaVenezuelaSVG();
+      var waveSwatches = rings.map(function (km, i) {
+        return '<span style="display:inline-flex;align-items:center;gap:5px;margin:0 12px 4px 0;font-size:15px;font-weight:800;color:#38594d;white-space:nowrap;"><i style="display:inline-block;width:11px;height:11px;border-radius:50%;background:' + waveColors[i] + ';"></i>ANILLO ' + (i + 1) + ' · ' + km + ' KM</span>';
+      }).join("");
+      var STORY_W = 1080, STORY_H = 1920;
+      var REPORT_LOGO_LEFT_SRC = "logo1.png.png", REPORT_LOGO_RIGHT_SRC = "logo2.png.png";
+      var wrap = document.createElement("div");
+      wrap.id = "quake-report-export-wrap";
+      wrap.style.cssText = "position:fixed;left:-9999px;top:0;width:" + STORY_W + "px;z-index:0;pointer-events:none;";
+      var magColor = MapCtrl.quakeMagColor(mag);
+      var severity = esc(magInfo.nivel);
+      var depthHTML = esc(depthText);
+      var magTypeHTML = esc(magType);
+      var coordsHTML = esc(coordsText);
+      var eventWhenHTML = esc(eventWhen.toUpperCase() + " · HORA DE VENEZUELA");
+      var reportFileBase = "reporte-sismico-venezuela-" + eventDateKey + "-M" + mag.toFixed(1).replace(".", "-");
+
+      wrap.innerHTML =
+        '<div id="quake-report-card" style="width:' + STORY_W + 'px;height:' + STORY_H + 'px;box-sizing:border-box;font-family:\'Segoe UI\',system-ui,-apple-system,sans-serif;margin:0;padding:0;background:linear-gradient(180deg,#B4D445 0%,#7cb342 12%,#135242 28%,#0d3d32 36%,#eef6ea 36.1%,#f2f8f0 100%);overflow:hidden;color:#0d3d32;position:relative;">' +
+          '<div style="padding:56px 48px 40px;position:relative;box-sizing:border-box;">' +
+            '<div style="display:inline-block;background:rgba(255,255,255,.92);color:#0d3d32;font-size:18px;font-weight:900;letter-spacing:.04em;padding:10px 22px;border-radius:999px;box-shadow:0 4px 16px rgba(0,0,0,.12);">SIGP · OBSERVATORIO CLIMÁTICO</div>' +
+            '<div id="quake-flyer-logos" style="display:none;position:absolute;right:86px;top:36px;width:540px;height:110px;align-items:center;justify-content:flex-end;gap:10px;z-index:2;">' +
+              '<div style="position:relative;flex:0 0 260px;width:260px;height:108px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img src="' + REPORT_LOGO_LEFT_SRC + '" alt="Logo institucional izquierdo" style="display:none;position:absolute;left:50%;top:50%;width:315px;height:315px;max-width:none;object-fit:contain;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+              '<div style="position:relative;left:40px;flex:0 0 270px;width:270px;height:108px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img src="' + REPORT_LOGO_RIGHT_SRC + '" alt="Logo institucional derecho" style="display:none;position:absolute;left:50%;top:51.7%;width:300px;height:375px;max-width:none;object-fit:contain;transform:translate(-50%,-50%);filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+            '</div>' +
+            '<div style="margin-top:28px;max-width:70%;position:relative;z-index:1;">' +
+              '<div style="font-size:64px;font-weight:900;line-height:1.02;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.18);">REPORTE<br/>SÍSMICO</div>' +
+              '<div style="margin-top:18px;font-size:28px;font-weight:500;color:rgba(255,255,255,.92);">' + eventWhenHTML + '</div>' +
+              '<div style="margin-top:8px;font-size:30px;font-weight:800;color:#B4D445;max-width:900px;">' + placeTitleHTML + '</div>' +
+            '</div>' +
+            '<div style="margin-top:32px;display:flex;gap:18px;">' +
+              '<div style="flex:1;min-width:0;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:22px;padding:16px 20px;display:flex;align-items:center;gap:16px;">' +
+                '<div style="width:64px;height:64px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#FFF6E4;box-shadow:0 4px 12px rgba(0,0,0,.2),inset 0 0 0 2px rgba(255,255,255,.7);">' + iconoPinReporte + '</div>' +
+                '<div style="min-width:0;"><div style="font-size:16px;font-weight:800;color:#B4D445;letter-spacing:.04em;">COORDENADAS DEL EPICENTRO</div><div style="font-size:20px;font-weight:900;color:#fff;margin-top:2px;">' + coordsHTML + '</div></div>' +
+              '</div>' +
+              '<div style="flex:1;min-width:0;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:22px;padding:16px 20px;display:flex;align-items:center;gap:16px;">' +
+                '<div style="width:64px;height:64px;border-radius:50%;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#FFF6E4;box-shadow:0 4px 12px rgba(0,0,0,.2),inset 0 0 0 2px rgba(255,255,255,.7);">' + iconoMagnitudReporte + '</div>' +
+                '<div><div style="font-size:16px;font-weight:800;color:#B4D445;letter-spacing:.04em;">MAGNITUD</div><div style="font-size:30px;font-weight:900;color:#fff;margin-top:2px;">M ' + mag.toFixed(1) + ' · ' + severity + '</div></div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="padding:6px 44px 26px;box-sizing:border-box;">' +
+            '<div style="display:flex;align-items:center;gap:22px;background:#fff;border-radius:27px;padding:22px 26px;margin-bottom:18px;box-shadow:0 9px 24px rgba(13,61,50,.1);">' +
+              '<div style="flex-shrink:0;width:130px;height:130px;display:flex;align-items:center;justify-content:center;">' +
+                '<div style="width:116px;height:116px;border-radius:50%;background:#FFF6E4;border:3px solid ' + magColor + ';display:flex;align-items:center;justify-content:center;box-shadow:0 5px 16px ' + magColor + '28,inset 0 0 0 6px #fff;">' +
+                  iconoSismoReporte +
+                '</div>' +
+              '</div>' +
+              '<div style="flex:1;min-width:0;">' +
+                '<div style="font-size:22px;font-weight:800;color:#6a9a3a;letter-spacing:.02em;">EVENTO SÍSMICO · USGS</div>' +
+                '<div style="font-size:44px;font-weight:900;color:#0d3d32;line-height:1.08;margin-top:6px;">M ' + mag.toFixed(1) + ' · ' + severity + '</div>' +
+                '<div style="margin-top:10px;font-size:18px;line-height:1.4;font-weight:650;color:#36594c;">' + esc(magInfo.detalle) + '</div>' +
+                '<div style="margin-top:9px;font-size:15px;font-weight:800;color:#6a8175;">ID USGS · ' + esc(quake.eventId || props.code || "NO DISPONIBLE") + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div style="background:#fff;border-radius:28px;padding:22px 22px 19px;margin-bottom:17px;box-shadow:0 10px 28px rgba(13,61,50,.1);">' +
+              '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:0 4px 13px;">' +
+                '<div><div style="font-size:26px;font-weight:950;color:#0d3d32;">MAPA DE VENEZUELA</div><div style="font-size:14px;font-weight:700;letter-spacing:.04em;color:#71867b;margin-top:4px;">ANILLOS DE ALCANCE Y LOCALIDADES CERCANAS</div></div>' +
+                '<div style="font-size:14px;font-weight:900;color:#9b3d34;background:#fff1ed;border:1px solid #f1c8bf;border-radius:999px;padding:7px 12px;">COORDENADAS · ' + coordsHTML + '</div>' +
+              '</div>' +
+              '<div id="quake-report-map" style="width:100%;height:650px;position:relative;overflow:hidden;border-radius:22px;border:1px solid #dce8e5;background:#eaf3f6;">' +
+                '<div id="quake-report-map-fallback" style="position:absolute;inset:0;z-index:0;pointer-events:none;">' + mapSVG + '</div>' +
+                '<div style="position:absolute;right:7px;bottom:6px;z-index:800;padding:3px 6px;border-radius:4px;background:rgba(255,255,255,.82);font-size:10px;font-weight:650;color:#475c52;">© ESRI · DATOS OSM Y OTROS</div>' +
+              '</div>' +
+              '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:3px 8px;margin:13px 3px 0;">' + waveSwatches + '</div>' +
+              '<div style="margin:10px 4px 0;padding:10px 13px;background:#f4f7f5;border-left:4px solid #d4a72c;border-radius:7px;font-size:13px;font-weight:650;line-height:1.4;color:#5f7369;">Los anillos muestran radios de referencia utilizados por el visualizador, no predicen intensidad, daños ni propagación real de las ondas sísmicas. Confirma siempre la información con las autoridades y el USGS.</div>' +
+            '</div>' +
+            '<div style="display:flex;gap:12px;margin-bottom:15px;">' +
+              '<div style="flex:1;background:#fff;border-radius:19px;padding:14px 13px;box-shadow:0 5px 16px rgba(13,61,50,.07);"><div style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:900;letter-spacing:.08em;color:#7b9286;">' + iconoProfundidadReporte + 'PROFUNDIDAD</div><div style="font-size:18px;font-weight:900;line-height:1.2;color:#245b52;margin-top:6px;">' + depthHTML + '</div></div>' +
+              '<div style="flex:1;background:#fff;border-radius:19px;padding:14px 13px;box-shadow:0 5px 16px rgba(13,61,50,.07);"><div style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:900;letter-spacing:.08em;color:#7b9286;">' + iconoTipoReporte + 'TIPO DE MAGNITUD</div><div style="font-size:17px;font-weight:900;line-height:1.2;color:#245b52;margin-top:6px;">' + magTypeHTML + '</div></div>' +
+              '<div style="flex:1;background:#fff;border-radius:19px;padding:14px 13px;box-shadow:0 5px 16px rgba(13,61,50,.07);"><div style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:900;letter-spacing:.08em;color:#7b9286;">' + iconoPercepcionReporte + 'PERCEPCIÓN</div><div style="font-size:17px;font-weight:900;line-height:1.2;color:#245b52;margin-top:6px;">' + esc(feltText) + '</div></div>' +
+              '<div style="flex:1;background:#fff;border-radius:19px;padding:14px 13px;box-shadow:0 5px 16px rgba(13,61,50,.07);"><div style="display:flex;align-items:center;gap:5px;font-size:13px;font-weight:900;letter-spacing:.08em;color:#7b9286;">' + iconoTsunamiReporte + 'TSUNAMI · PAGER</div><div style="font-size:16px;font-weight:900;line-height:1.2;color:#245b52;margin-top:6px;">' + esc(tsunamiText + " · " + pagerText) + '</div></div>' +
+            '</div>' +
+            '<div style="text-align:center;margin-top:8px;font-size:14px;font-weight:850;letter-spacing:.06em;color:#789181;">FUENTE: USGS · ' + esc(generatedDate.toUpperCase()) + ' · OBSERVATORIO CLIMÁTICO SIGP</div>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(wrap);
+      var card = document.getElementById("quake-report-card");
+      var quakeReportMap = null;
+      var quakeReportTiles = null;
+      self.showLoad(true);
+
+      function dibujarOndasEnMapaReporte() {
+        if (!quakeReportMap) return;
+        var mapEl = document.getElementById("quake-report-map");
+        if (!mapEl) return;
+        var size = quakeReportMap.getSize();
+        var center = quakeReportMap.latLngToContainerPoint([lat, lon]);
+        var cosLat = Math.max(0.25, Math.cos(lat * Math.PI / 180));
+        function px(n) { return Math.round(n * 10) / 10; }
+        var circles = "";
+        for (var i = rings.length - 1; i >= 0; i--) {
+          var radiusKm = rings[i];
+          var east = quakeReportMap.latLngToContainerPoint([lat, lon + radiusKm / (111.32 * cosLat)]);
+          var north = quakeReportMap.latLngToContainerPoint([lat + radiusKm / 111.32, lon]);
+          var rx = Math.max(2, Math.abs(east.x - center.x));
+          var ry = Math.max(2, Math.abs(north.y - center.y));
+          circles += '<ellipse cx="' + px(center.x) + '" cy="' + px(center.y) + '" rx="' + px(rx) + '" ry="' + px(ry) + '" fill="' + waveColors[i] + '" fill-opacity="' + (i === 0 ? ".08" : ".03") + '" stroke="' + waveColors[i] + '" stroke-width="2.2" stroke-dasharray="8 6" opacity=".96"/>';
+        }
+        var marker = '<circle cx="' + px(center.x) + '" cy="' + px(center.y) + '" r="25" fill="none" stroke="#ef4444" stroke-width="3" opacity=".55"/>' +
+          '<circle cx="' + px(center.x) + '" cy="' + px(center.y) + '" r="21" fill="#f97316" stroke="#fff" stroke-width="3.5"/>' +
+          '<text x="' + px(center.x) + '" y="' + px(center.y + 1) + '" text-anchor="middle" dominant-baseline="central" font-family="Arial,sans-serif" font-size="14" font-weight="900" letter-spacing="-.3" fill="#fff">' + mag.toFixed(1) + '</text>';
+        var overlay = document.createElement("div");
+        overlay.id = "quake-report-wave-overlay";
+        overlay.style.cssText = "position:absolute;left:0;top:0;width:" + size.x + "px;height:" + size.y + "px;z-index:650;pointer-events:none;overflow:hidden;";
+        overlay.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="' + size.x + '" height="' + size.y + '" viewBox="0 0 ' + size.x + ' ' + size.y + '" aria-hidden="true">' + circles + marker + '</svg>';
+        mapEl.appendChild(overlay);
+      }
+
+      function prepararMapaReporte() {
+        var mapEl = document.getElementById("quake-report-map");
+        if (!mapEl || typeof L === "undefined" || !L.map || !L.tileLayer) return Promise.resolve(false);
+        try {
+          quakeReportMap = L.map(mapEl, {
+            zoomControl: false, attributionControl: false, scrollWheelZoom: false,
+            doubleClickZoom: false, dragging: false, keyboard: false, boxZoom: false,
+            touchZoom: false, zoomAnimation: false, fadeAnimation: false, markerZoomAnimation: false,
+            zoomSnap: 0, minZoom: 2, maxZoom: 18
+          });
+          var outerKm = rings[rings.length - 1];
+          var latRadMap = lat * Math.PI / 180;
+          var radiusLat = outerKm / 111.32 + 1.2;
+          var radiusLon = outerKm / (111.32 * Math.max(0.25, Math.cos(latRadMap))) + 1.5;
+          var west = Math.min(-78.5, lon - radiusLon);
+          var east = Math.max(-54.5, lon + radiusLon);
+          var south = Math.min(-4, lat - radiusLat);
+          var north = Math.max(15.5, lat + radiusLat);
+          quakeReportMap.fitBounds([[south, west], [north, east]], { padding: [12, 12], animate: false });
+
+          return new Promise(function (resolve) {
+            var settled = false;
+            var timer = window.setTimeout(function () { finish(false); }, 6500);
+            function finish(ok) {
+              if (settled) return;
+              settled = true;
+              window.clearTimeout(timer);
+              if (ok) {
+                try {
+                  dibujarOndasEnMapaReporte();
+                  var fallback = mapEl.querySelector("#quake-report-map-fallback");
+                  if (fallback) fallback.style.display = "none";
+                } catch (eOverlay) {
+                  console.warn("No se pudo dibujar el anillo SVG de exportación; se conserva el mapa vectorial de respaldo.", eOverlay);
+                }
+              } else {
+                try { if (quakeReportMap) quakeReportMap.remove(); } catch (eFallbackMap) {}
+                quakeReportMap = null;
+                mapEl.innerHTML = '<div id="quake-report-map-fallback" style="position:absolute;inset:0;z-index:0;pointer-events:none;">' + mapSVG + '</div>' +
+                  '<div style="position:absolute;right:7px;bottom:6px;z-index:800;padding:3px 6px;border-radius:4px;background:rgba(255,255,255,.82);font-size:10px;font-weight:650;color:#475c52;">© ESRI · DATOS OSM Y OTROS</div>';
+              }
+              resolve(ok);
+            }
+            quakeReportTiles = L.tileLayer(
+              "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+              { maxZoom: 19, crossOrigin: true, attribution: "© ESRI · DATOS OSM Y OTROS" }
+            );
+            quakeReportTiles.once("load", function () { finish(true); });
+            quakeReportTiles.once("tileerror", function () {
+              /* El fallback vectorial permanece debajo si el servicio cartográfico falla. */
+            });
+            quakeReportTiles.addTo(quakeReportMap);
+            window.setTimeout(function () {
+              try { quakeReportMap.invalidateSize({ pan: false }); } catch (eSize) {}
+            }, 100);
+          });
+        } catch (eMap) {
+          console.warn("No se pudo preparar el mapa sísmico con teselas; se usará el mapa vectorial de respaldo.", eMap);
+          try { if (quakeReportMap) quakeReportMap.remove(); } catch (eRemoveMap) {}
+          quakeReportMap = null;
+          return Promise.resolve(false);
+        }
+      }
+
+      function ajustarAlto() {
+        var alto = card.scrollHeight;
+        if (alto > STORY_H) card.style.height = alto + "px";
+      }
+      function esperarImagenes(root) {
+        var imgs = root.querySelectorAll("img"), waits = [];
+        for (var i = 0; i < imgs.length; i++) {
+          if (imgs[i].complete) continue;
+          waits.push(new Promise(function (resolve) {
+            var img = imgs[i];
+            var done = function () { img.removeEventListener("load", done); img.removeEventListener("error", done); resolve(); };
+            img.addEventListener("load", done, { once: true });
+            img.addEventListener("error", done, { once: true });
+            if (img.complete) done();
+          }));
+        }
+        return Promise.all(waits);
+      }
+      function capturar() {
+        return html2canvas(card, { backgroundColor: null, scale: captureScale, useCORS: true, allowTaint: false, logging: false });
+      }
+      function exportar(canvas) {
+        if (outputFormat === "png") {
+          return new Promise(function (resolve, reject) {
+            try {
+              canvas.toBlob(function (blob) {
+                try {
+                  if (!blob) { reject(new Error("No se pudo codificar el PNG.")); return; }
+                  var objectURL = URL.createObjectURL(blob);
+                  var link = document.createElement("a");
+                  link.href = objectURL;
+                  link.download = reportFileBase + ".png";
+                  link.style.display = "none";
+                  document.body.appendChild(link);
+                  link.click();
+                  link.remove();
+                  window.setTimeout(function () { URL.revokeObjectURL(objectURL); }, 30000);
+                  resolve();
+                } catch (eBlob) { reject(eBlob); }
+              }, "image/png");
+            } catch (ePng) { reject(ePng); }
+          });
+        }
+        try {
+          var jpeg = canvas.toDataURL("image/jpeg", 0.95);
+          var pageWidth = 108;
+          var pageHeight = Math.round(pageWidth * (card.clientHeight / STORY_W) * 100) / 100;
+          var doc = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: [pageWidth, pageHeight], compress: true });
+          doc.addImage(jpeg, "JPEG", 0, 0, pageWidth, pageHeight);
+          doc.save(reportFileBase + ".pdf");
+          return Promise.resolve();
+        } catch (ePdf) { return Promise.reject(ePdf); }
+      }
+      function exportarConRespaldo(canvas) {
+        return exportar(canvas).catch(function (errorExport) {
+          var msg = String(errorExport && errorExport.message || "");
+          var securityError = !!(errorExport && errorExport.name === "SecurityError") || /taint|origin|security/i.test(msg);
+          var logos = card.querySelector("#quake-flyer-logos");
+          if (logos && logos.parentNode && (outputFormat === "pdf" || securityError)) {
+            logos.parentNode.removeChild(logos);
+            return capturar().then(exportarConRespaldo);
+          }
+          if (outputFormat === "png" && captureScale > 2) {
+            captureScale -= 1;
+            return capturar().then(exportarConRespaldo);
+          }
+          throw errorExport;
+        });
+      }
+      prepararMapaReporte().then(function () { return esperarImagenes(card); })
+        .then(function () { return new Promise(function (resolve) { setTimeout(resolve, 120); }); })
+        .then(function () { ajustarAlto(); return capturar(); })
+        .then(exportarConRespaldo)
+        .catch(function (errorReporte) {
+          console.error(errorReporte);
+          self.showError(outputFormat === "png" ? "NO SE PUDO GENERAR EL PNG SÍSMICO. INTENTA DE NUEVO." : "NO SE PUDO GENERAR EL PDF SÍSMICO. INTENTA DE NUEVO.");
+        })
+        .finally(function () {
+          self.showLoad(false);
+          try { if (quakeReportMap) quakeReportMap.remove(); } catch (eMapRemove) {}
+          try { document.body.removeChild(wrap); } catch (eRemove) {}
+        });
+    },
+
+    /* Motor único del reporte climático: conserva la misma plantilla para exportar PDF o PNG. */
+    downloadFlyer: function (format) {
+      var self = this;
+      var outputFormat = String(format || "pdf").toLowerCase() === "png" ? "png" : "pdf";
+      /* PNG a 4×: 4320×7680 px para una tarjeta de 1080×1920; exportación lossless. */
+      var captureScale = outputFormat === "png" ? 4 : 2;
+      /* Cada reporte usa datos frescos promediados en las seis parroquias, sin
+         depender del punto o la parroquia seleccionados en el mapa. */
+      if (!this._pdfMunicipalReady) {
+        if (this._pdfMunicipalLoading) return;
+        this._pdfMunicipalLoading = true;
         this.showLoad(true);
-        API.municipalForecast().then(function (m) {
-          self._muniForecast = (m && m.current) ? m : null;
+        Promise.all([API.municipalForecast(), API.municipalAirQuality()]).then(function (datos) {
+          self._pdfMunicipalLoading = false;
           self.showLoad(false);
-          self.downloadFlyerPDF();
-        }, function () {
+          var municipal = datos[0];
+          var aireMunicipal = datos[1];
+          if (!municipal || !municipal.current || Number(municipal._parroquias) !== 6) {
+            self._muniForecast = null;
+            self._pdfMunicipalAQI = null;
+            self.showError("NO SE PUDO OBTENER EL PROMEDIO DE LAS 6 PARROQUIAS. INTENTA GENERAR EL REPORTE DE NUEVO.");
+            return;
+          }
+          self._muniForecast = municipal;
+          self._pdfMunicipalAQI = aireMunicipal && Number(aireMunicipal._parroquias) === 6 && aireMunicipal.current
+            ? Number(aireMunicipal.current.european_aqi) : null;
+          self._pdfMunicipalReady = true;
+          self.downloadFlyer(format);
+        }).catch(function (errorMunicipal) {
+          console.error("Error al preparar el reporte municipal:", errorMunicipal);
+          self._pdfMunicipalLoading = false;
           self.showLoad(false);
-          self.downloadFlyerPDF();
+          self._muniForecast = null;
+          self._pdfMunicipalAQI = null;
+          self.showError("NO SE PUDO OBTENER EL PRONÓSTICO MUNICIPAL. INTENTA GENERAR EL REPORTE DE NUEVO.");
         });
         return;
       }
-      var fc = (this._muniForecast && this._muniForecast.current) ? this._muniForecast : this._lastForecast;
-      var esMuni = !!(this._muniForecast && fc === this._muniForecast);
-      if (!fc || !fc.current) {
-        this.showError("ESPERA A QUE CARGUEN LOS DATOS CLIMÁTICOS.");
+      this._pdfMunicipalReady = false;
+      var fc = this._muniForecast;
+      var esMuni = !!(fc && fc.current && Number(fc._parroquias) === 6);
+      if (!esMuni || !fc || !fc.current) {
+        this._muniForecast = null;
+        this._pdfMunicipalAQI = null;
+        this.showError("EL REPORTE REQUIERE DATOS DE LAS 6 PARROQUIAS DEL MUNICIPIO. INTENTA DE NUEVO.");
         return;
       }
-      if (!window.jspdf || !window.jspdf.jsPDF || typeof html2canvas !== "function") {
-        this.showError("LIBRERÍAS PDF NO DISPONIBLES. REVISA TU CONEXIÓN.");
+      if (typeof html2canvas !== "function" || (outputFormat === "pdf" && (!window.jspdf || !window.jspdf.jsPDF))) {
+        this.showError(outputFormat === "pdf"
+          ? "LIBRERÍAS PDF NO DISPONIBLES. REVISA TU CONEXIÓN."
+          : "NO SE PUDO CARGAR LA LIBRERÍA DE IMAGEN. REVISA TU CONEXIÓN.");
         return;
       }
       var c = fc.current;
       var d = fc.daily || {};
       var hourly = fc.hourly || {};
-      var todayStr = new Date().toISOString().slice(0, 10);
+      var reportNow = new Date();
+      var caracasDateParts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Caracas", year: "numeric", month: "2-digit", day: "2-digit"
+      }).formatToParts(reportNow);
+      var reportYear = "", reportMonth = "", reportDay = "";
+      caracasDateParts.forEach(function (part) {
+        if (part.type === "year") reportYear = part.value;
+        else if (part.type === "month") reportMonth = part.value;
+        else if (part.type === "day") reportDay = part.value;
+      });
+      var todayStr = reportYear + "-" + reportMonth + "-" + reportDay;
+      var reportDayUTC = Date.UTC(Number(reportYear), Number(reportMonth) - 1, Number(reportDay));
       var di = 0;
       if (d.time) {
         var found = d.time.indexOf(todayStr);
@@ -9435,20 +10051,30 @@ var ReportKit = (function () {
       var precipToday = d.precipitation_sum && d.precipitation_sum[di] != null ? d.precipitation_sum[di] : 0;
       var tempNow = c.temperature_2m != null ? Math.round(c.temperature_2m) : "--";
       var isDayNow = c.is_day != null ? !!c.is_day : true;
-      var iconNow = API.emoji(codeToday, isDayNow);
 
+      /* Las franjas se anclan siempre a las 06:00 de la fecha local del
+         municipio, aunque el PDF se solicite más tarde. Los offsets 0–24
+         cubren 06:00 de hoy hasta 06:00 de mañana. */
       function avgRange(hStart, hEnd) {
-        var temps = [], feels = [], rains = [], codes = [];
+        var temps = [], feels = [], rains = [], rainAmounts = [], codes = [];
         if (!hourly.time) return { tMin: minT != null ? minT : "--", tMax: maxT != null ? maxT : "--",
-          fMin: feelsMin, fMax: feelsMax, rainP: 0, code: codeToday, icon: API.emoji(codeToday, hStart < 18) };
+          fMin: feelsMin, fMax: feelsMax, rainP: 0, precipMm: precipToday, code: codeToday,
+          icon: API.emoji(codeToday, hStart < 12) };
         for (var i = 0; i < hourly.time.length; i++) {
           var iso = hourly.time[i];
-          if (String(iso).slice(0, 10) !== todayStr) continue;
-          var hh = new Date(iso).getHours();
-          if (hh < hStart || hh >= hEnd) continue;
+          var mt = String(hourly.time[i]).match(/^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2})/);
+          var isoText = String(iso);
+          var dateText = isoText.slice(0, 10);
+          var hourText = isoText.slice(11, 13);
+          if (dateText.length !== 10 || isoText.charAt(10) !== "T" || !/^[0-9]{2}$/.test(hourText)) continue;
+          var itemDayUTC = Date.UTC(Number(dateText.slice(0, 4)), Number(dateText.slice(5, 7)) - 1, Number(dateText.slice(8, 10)));
+          var dayOffset = Math.round((itemDayUTC - reportDayUTC) / 86400000);
+          var hourOffset = dayOffset * 24 + Number(hourText) - 6;
+          if (hourOffset < hStart || hourOffset >= hEnd) continue;
           if (hourly.temperature_2m && hourly.temperature_2m[i] != null) temps.push(hourly.temperature_2m[i]);
           if (hourly.apparent_temperature && hourly.apparent_temperature[i] != null) feels.push(hourly.apparent_temperature[i]);
           if (hourly.precipitation_probability && hourly.precipitation_probability[i] != null) rains.push(hourly.precipitation_probability[i]);
+          if (hourly.precipitation && hourly.precipitation[i] != null) rainAmounts.push(Number(hourly.precipitation[i]));
           if (hourly.weather_code && hourly.weather_code[i] != null) codes.push(hourly.weather_code[i]);
         }
         var tMin = temps.length ? Math.round(Math.min.apply(null, temps)) : (minT != null ? minT : "--");
@@ -9456,20 +10082,29 @@ var ReportKit = (function () {
         var fMin = feels.length ? Math.round(Math.min.apply(null, feels)) : feelsMin;
         var fMax = feels.length ? Math.round(Math.max.apply(null, feels)) : feelsMax;
         var rainP = rains.length ? Math.round(rains.reduce(function (a, b) { return a + b; }, 0) / rains.length) : 0;
+        var precipMm = rainAmounts.length ? rainAmounts.reduce(function (a, b) { return a + b; }, 0) : null;
         var code = codes.length ? codes[Math.floor(codes.length / 2)] : codeToday;
-        return { tMin: tMin, tMax: tMax, fMin: fMin, fMax: fMax,
-                 rainP: rainP, code: code, icon: API.emoji(code, hStart < 18) };
+        return { tMin: tMin, tMax: tMax, fMin: fMin, fMax: fMax, rainP: rainP,
+                 precipMm: precipMm, code: code, icon: API.emoji(code, hStart < 12) };
       }
-      var morning = avgRange(6, 12);
-      var afternoon = avgRange(12, 18);
-      var night = avgRange(18, 24);
+      var fullWindow = avgRange(0, 24);
+      if (fullWindow.tMin !== "--") minT = fullWindow.tMin;
+      if (fullWindow.tMax !== "--") maxT = fullWindow.tMax;
+      if (fullWindow.fMin != null) feelsMin = fullWindow.fMin;
+      if (fullWindow.fMax != null) feelsMax = fullWindow.fMax;
+      if (fullWindow.precipMm != null) precipToday = fullWindow.precipMm;
+      if (fullWindow.code != null) codeToday = fullWindow.code;
+      var morning = avgRange(0, 6);
+      var afternoon = avgRange(6, 12);
+      var night = avgRange(12, 24);
 
       var place = (this.name || "Municipio Simón Bolívar, Anzoátegui");
       /* portada: una sola línea, fuerte y clara */
       if (esMuni) place = "MUNICIPIO SIMÓN BOLÍVAR";
-      var dateLong = new Date().toLocaleDateString("es-VE", {
+      var dateLong = new Intl.DateTimeFormat("es-VE", {
+        timeZone: "America/Caracas",
         weekday: "long", day: "numeric", month: "long", year: "numeric"
-      });
+      }).format(reportNow);
       dateLong = dateLong.charAt(0).toUpperCase() + dateLong.slice(1);
       var cond = API.codeText(codeToday);
 
@@ -9492,12 +10127,7 @@ var ReportKit = (function () {
          Decide el tipo de jornada, el titular y los 4 avisos/consejos más
          relevantes según las condiciones reales (lluvia, tormenta, viento,
          calor, frío, UV, niebla, calidad del aire, visibilidad, noche). */
-      var aqiNow = null;
-      try {
-        if (this._lastAQI && this._lastAQI.current && this._lastAQI.current.european_aqi != null) {
-          aqiNow = this._lastAQI.current.european_aqi;
-        }
-      } catch (eA) {}
+      var aqiNow = this._pdfMunicipalAQI != null ? Number(this._pdfMunicipalAQI) : null;
       var maxRainP = Math.max(morning.rainP || 0, afternoon.rainP || 0, night.rainP || 0);
       var ctx = {
         condText: cond,
@@ -9519,15 +10149,222 @@ var ReportKit = (function () {
       var plan = ReportKit.plan(ctx);
       var resumen = plan.summary;
 
-      /* tarjetas de aviso: medallón con icono + dato dentro de un anillo */
+      /* En el PDF las nubes llevan un relleno gris azulado y borde con contraste;
+         las lunas se colorean en tono miel. Solo afecta a los iconos del reporte,
+         no a los iconos de la interfaz general. */
+      function estilizarIconoReporte(markup) {
+        var out = String(markup || "");
+        var gradClose = "</linearGradient>";
+        var gradStart = 0, gradEnd;
+        while ((gradStart = out.indexOf('<linearGradient id="cl', gradStart)) >= 0) {
+          gradEnd = out.indexOf(gradClose, gradStart);
+          if (gradEnd < 0) break;
+          gradEnd += gradClose.length;
+          var cloudGrad = out.slice(gradStart, gradEnd);
+          if (cloudGrad.indexOf('stop-color="#FFFFFF"') >= 0 && cloudGrad.indexOf('stop-color="#EEF4F9"') >= 0) {
+            cloudGrad = cloudGrad
+              .split('stop-color="#FFFFFF"').join('stop-color="#D9F1FF"')
+              .split('stop-color="#EEF4F9"').join('stop-color="#A8D9F4"')
+              .split('stop-color="#D3E0EA"').join('stop-color="#6FB9E3"')
+              .split('stop-color="#D7E2EB"').join('stop-color="#6FB9E3"');
+            out = out.slice(0, gradStart) + cloudGrad + out.slice(gradEnd);
+            gradStart += cloudGrad.length;
+          } else {
+            gradStart = gradEnd;
+          }
+        }
+        out = out
+          .split('stroke="#D3E0EA"').join('stroke="#287BA8"')
+          .split('stroke="#D7E2EB"').join('stroke="#287BA8"');
+        var moonClose = "</radialGradient>";
+        var moonStart = 0, moonEnd;
+        while ((moonStart = out.indexOf('<radialGradient id="mo', moonStart)) >= 0) {
+          moonEnd = out.indexOf(moonClose, moonStart);
+          if (moonEnd < 0) break;
+          moonEnd += moonClose.length;
+          var moonGrad = out.slice(moonStart, moonEnd)
+            .split('stop-color="#FFFFFF"').join('stop-color="#FFF3B0"')
+            .split('stop-color="#DCE7F7"').join('stop-color="#FFD65B"')
+            .split('stop-color="#AFC3DC"').join('stop-color="#E5A12B"');
+          out = out.slice(0, moonStart) + moonGrad + out.slice(moonEnd);
+          moonStart += moonGrad.length;
+        }
+        return out;
+      }
+
+      /* Set institucional para el tiempo: SVG lineales, sin apariencia de emoji
+         ni degradados; nubes azul petróleo y acentos miel. */
+      function iconoClimaInstitucional(codigo, dia, size) {
+        var cod = Number(codigo);
+        var esDia = dia !== false;
+        size = size || 64;
+        function n(v) { return Math.round(v * 10) / 10; }
+        function sol(cx, cy, r) {
+          var rayos = "";
+          for (var i = 0; i < 8; i++) {
+            var a = -Math.PI / 2 + i * Math.PI / 4;
+            rayos += '<line x1="' + n(cx + Math.cos(a) * (r + 4)) + '" y1="' + n(cy + Math.sin(a) * (r + 4)) +
+              '" x2="' + n(cx + Math.cos(a) * (r + 8)) + '" y2="' + n(cy + Math.sin(a) * (r + 8)) + '"/>';
+          }
+          return '<g fill="none" stroke="#A77C20" stroke-width="2.8" stroke-linecap="round">' + rayos + '</g>' +
+            '<circle cx="' + n(cx) + '" cy="' + n(cy) + '" r="' + n(r) + '" fill="#F3D36D" stroke="#A77C20" stroke-width="2.4"/>';
+        }
+        function luna(cx, cy, r) {
+          var id = "pdf-luna-" + Math.random().toString(36).slice(2);
+          return '<defs><mask id="' + id + '"><rect x="0" y="0" width="64" height="64" fill="#fff"/>' +
+            '<circle cx="' + n(cx + r * 0.58) + '" cy="' + n(cy - r * 0.25) + '" r="' + n(r * 0.88) + '" fill="#000"/></mask></defs>' +
+            '<circle cx="' + n(cx) + '" cy="' + n(cy) + '" r="' + n(r) + '" fill="#E2B33A" stroke="#9C761C" stroke-width="2.2" mask="url(#' + id + ')"/>';
+        }
+        function nube(oscura) {
+          var relleno = oscura ? "#B7CBD2" : "#C8E5ED";
+          return '<path d="M17 43h30a9 9 0 0 0 0-18h-1a14 14 0 0 0-27-3A11 11 0 0 0 17 43Z" fill="' + relleno +
+            '" stroke="#2D718A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
+        }
+        function gotas() {
+          return '<g fill="#438EAA">' +
+            '<path d="M18 51c0-2.5 3.5-6 3.5-6s3.5 3.5 3.5 6a3.5 3.5 0 1 1-7 0Z"/>' +
+            '<path d="M29 54c0-2.5 3.5-6 3.5-6s3.5 3.5 3.5 6a3.5 3.5 0 1 1-7 0Z"/>' +
+            '<path d="M40 51c0-2.5 3.5-6 3.5-6s3.5 3.5 3.5 6a3.5 3.5 0 1 1-7 0Z"/></g>';
+        }
+        function copo(cx, cy, r) {
+          var lineas = "";
+          for (var j = 0; j < 3; j++) {
+            var a = j * Math.PI / 3;
+            lineas += '<line x1="' + n(cx - Math.cos(a) * r) + '" y1="' + n(cy - Math.sin(a) * r) +
+              '" x2="' + n(cx + Math.cos(a) * r) + '" y2="' + n(cy + Math.sin(a) * r) + '"/>';
+          }
+          return '<g stroke="#4389A3" stroke-width="2.1" stroke-linecap="round">' + lineas + '</g>';
+        }
+        function neblina() {
+          return '<g fill="none" stroke="#668894" stroke-width="2.8" stroke-linecap="round">' +
+            '<path d="M14 50h36M20 57h24"/></g>';
+        }
+        var arte = "";
+        if (cod === 0 || cod === 1) {
+          arte = esDia ? sol(32, 32, 11) : luna(32, 30, 19);
+        } else if (cod === 2) {
+          arte = (esDia ? sol(44, 18, 8) : luna(44, 17, 9)) + nube(false);
+        } else if (cod === 3) {
+          arte = nube(false);
+        } else if (cod === 45 || cod === 48) {
+          arte = nube(false) + neblina();
+        } else if (cod === 95 || cod === 96 || cod === 99) {
+          arte = nube(true) + '<path d="M35 41 25 53h8l-2 10 14-17h-9l4-5Z" fill="#E0AD32" stroke="#A77C20" stroke-width="1.8" stroke-linejoin="round"/>';
+          if (cod === 96 || cod === 99) arte += '<g fill="#7797A4"><circle cx="20" cy="54" r="2.2"/><circle cx="48" cy="54" r="2.2"/></g>';
+        } else if ((cod >= 71 && cod <= 77) || cod === 85 || cod === 86) {
+          if (cod === 85 || cod === 86) arte += esDia ? sol(44, 18, 8) : luna(44, 17, 9);
+          arte += nube(false) + copo(22, 53, 4) + copo(34, 56, 4) + copo(46, 53, 4);
+        } else if ((cod >= 51 && cod <= 67) || (cod >= 80 && cod <= 82)) {
+          if (cod >= 80 && cod <= 82) arte += esDia ? sol(44, 18, 8) : luna(44, 17, 9);
+          arte += nube(false) + gotas();
+          if (cod === 56 || cod === 57 || cod === 66 || cod === 67) arte += copo(51, 54, 3.2);
+        } else {
+          arte = (esDia ? sol(44, 18, 8) : luna(44, 17, 9)) + nube(false);
+        }
+        return '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 64 64" style="width:' + size + 'px;height:' + size + 'px;display:block;">' + arte + '</svg>';
+      }
+
+      /* Pictogramas auxiliares del reporte: trazos institucionales, sin emojis. */
+      function iconoProfesionalPDF(tipo, size) {
+        var key = String(tipo || "").toLowerCase();
+        size = size || 48;
+        function svg(body) {
+          return '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 64 64" style="width:' + size + 'px;height:' + size + 'px;display:block;">' + body + '</svg>';
+        }
+        function termometro(frio) {
+          var color = frio ? "#4389A3" : "#B75F4D";
+          return svg('<path d="M27 15a5 5 0 0 1 10 0v25a11 11 0 1 1-10 0Z" fill="#F4F7F5" stroke="#245B52" stroke-width="3" stroke-linejoin="round"/>' +
+            '<path d="M32 24v22" stroke="' + color + '" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="47" r="6" fill="' + color + '"/>');
+        }
+        function horaSol(atardecer) {
+          if (atardecer) {
+            return svg('<path d="M18 36c0-8 6-14 14-14s14 6 14 14Z" fill="#E9B45B" stroke="#A77C20" stroke-width="2.4"/>' +
+              '<path d="M9 36h46" fill="none" stroke="#245B52" stroke-width="3" stroke-linecap="round"/>' +
+              '<g fill="none" stroke="#A77C20" stroke-width="2.6" stroke-linecap="round"><path d="M32 41v8M19 43l-4 5M45 43l4 5"/></g>' +
+              '<path d="M16 53h32M21 59h22" fill="none" stroke="#245B52" stroke-width="2.8" stroke-linecap="round"/>');
+          }
+          return svg('<g stroke="#A77C20" stroke-width="2.8" stroke-linecap="round"><path d="M32 8v8M17 16l5 6M47 16l-5 6"/></g>' +
+            '<path d="M18 43c0-8 6-14 14-14s14 6 14 14Z" fill="#F3D36D" stroke="#A77C20" stroke-width="2.4"/>' +
+            '<path d="M9 43h46M16 52h32" fill="none" stroke="#245B52" stroke-width="3" stroke-linecap="round"/>');
+        }
+        function viento() {
+          return svg('<g fill="none" stroke="#2D718A" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">' +
+            '<path d="M9 21h30c7 0 8-10 1-11-3 0-5 2-5 4M9 32h43c7 0 7 10 0 10-3 0-5-2-5-4M9 44h24"/></g>');
+        }
+        function gota() {
+          return svg('<path d="M32 8C25 20 16 29 16 40a16 16 0 0 0 32 0C48 29 39 20 32 8Z" fill="#D8EDF2" stroke="#2D718A" stroke-width="3" stroke-linejoin="round"/>' +
+            '<path d="M24 40a8 8 0 0 0 8 8" fill="none" stroke="#438EAA" stroke-width="2.6" stroke-linecap="round"/>');
+        }
+        function botella() {
+          return svg('<path d="M26 9h12v8l4 6v29a5 5 0 0 1-5 5H27a5 5 0 0 1-5-5V23l4-6Z" fill="#E6F1F3" stroke="#2D718A" stroke-width="3" stroke-linejoin="round"/>' +
+            '<path d="M27 15h10M23 34h18M25 41h14" fill="none" stroke="#438EAA" stroke-width="2.6" stroke-linecap="round"/>');
+        }
+        function paraguas() {
+          return svg('<path d="M9 32a23 23 0 0 1 46 0c-5-4-10-5-15 0-5-5-10-5-15 0-5-5-10-4-16 0Z" fill="#D8EDF2" stroke="#2D718A" stroke-width="3" stroke-linejoin="round"/>' +
+            '<path d="M32 32v17a7 7 0 0 1-14 0" fill="none" stroke="#245B52" stroke-width="3" stroke-linecap="round"/><path d="M32 12v20M20 16l4 10M44 16l-4 10" fill="none" stroke="#2D718A" stroke-width="2.5" stroke-linecap="round"/>');
+        }
+        function ojo() {
+          return svg('<path d="M7 32s9-15 25-15 25 15 25 15-9 15-25 15S7 32 7 32Z" fill="#E8F2F3" stroke="#2D718A" stroke-width="3" stroke-linejoin="round"/>' +
+            '<circle cx="32" cy="32" r="7.5" fill="#C4E2E9" stroke="#245B52" stroke-width="2.6"/><circle cx="32" cy="32" r="2.2" fill="#245B52"/>');
+        }
+        function aire() {
+          return svg('<g fill="none" stroke="#2D718A" stroke-width="2.8" stroke-linecap="round">' +
+            '<path d="M13 23h30M18 32h34M13 41h26"/></g><g fill="#A77C20"><circle cx="9" cy="23" r="2"/><circle cx="14" cy="32" r="2"/><circle cx="9" cy="41" r="2"/></g>');
+        }
+        function calor() {
+          return svg('<g fill="none" stroke="#A77C20" stroke-width="2.8" stroke-linecap="round"><circle cx="32" cy="24" r="11" fill="#F3D36D" stroke="#A77C20"/>' +
+            '<path d="M19 48c-4-4 4-6 0-10M32 48c-4-4 4-6 0-10M45 48c-4-4 4-6 0-10"/></g>');
+        }
+        if (key.indexOf("thunder") >= 0) return iconoClimaInstitucional(key.indexOf("hail") >= 0 ? 96 : 95, true, size);
+        if (key.indexOf("freezing") >= 0) return iconoClimaInstitucional(66, true, size);
+        if (key.indexOf("showers") >= 0) return iconoClimaInstitucional(80, key.indexOf("night") < 0, size);
+        if (key.indexOf("rain") >= 0) return iconoClimaInstitucional(65, true, size);
+        if (key.indexOf("snow") >= 0) return iconoClimaInstitucional(71, true, size);
+        if (key.indexOf("fog") >= 0) return iconoClimaInstitucional(key.indexOf("dense") >= 0 ? 48 : 45, true, size);
+        if (key === "clear-night") return iconoClimaInstitucional(0, false, size);
+        if (key === "sunrise") return horaSol(false);
+        if (key === "sunset") return horaSol(true);
+        if (key === "thermo") return termometro(false);
+        if (key === "drop") return gota();
+        if (key === "heat") return calor();
+        if (key === "uv") return iconoClimaInstitucional(0, true, size);
+        if (key === "wind" || key === "wind-strong") return viento();
+        if (key === "bottle") return botella();
+        if (key === "umbrella") return paraguas();
+        if (key === "visibility") return ojo();
+        if (key === "air") return aire();
+        if (key === "cold") return termometro(true);
+        return iconoClimaInstitucional(2, true, size);
+      }
+
+      /* Medallones institucionales planos con icono vectorial y valor opcional. */
       function adviceCard(a) {
         var size = 106;
         var vTxt = a.value == null ? null : String(a.value);
         var vSize = vTxt && vTxt.length > 4 ? 20 : (vTxt && vTxt.length > 3 ? 23 : 27);
-        return WIcon.medallion({
-          icon: a.icon, value: vTxt, tint: a.tint, progress: a.progress,
-          size: size, iconSize: a.value == null ? 56 : 28, valueSize: vSize
-        });
+        var tints = {
+          red: { bg: "#FFF2EE", track: "#E8C5BD", line: "#A84A3C", text: "#913D32" },
+          amber: { bg: "#FFF8E7", track: "#E8D8AA", line: "#A77C20", text: "#80621B" },
+          blue: { bg: "#EEF6F8", track: "#C5DCE2", line: "#2D718A", text: "#2D6477" },
+          teal: { bg: "#EEF7F4", track: "#C6DED7", line: "#2E746B", text: "#28665E" },
+          green: { bg: "#F2F7E9", track: "#D4E2BA", line: "#63843F", text: "#4F7137" },
+          slate: { bg: "#F2F6F7", track: "#D0DDE0", line: "#637D87", text: "#566F79" }
+        };
+        var tint = tints[a.tint] || tints.teal;
+        var progress = a.progress == null ? 1 : Math.max(0, Math.min(1, Number(a.progress) || 0));
+        var r = 41, circumference = 2 * Math.PI * r;
+        var iconSize = vTxt == null ? 54 : 30;
+        var iconMarkup = iconoProfesionalPDF(a.icon, iconSize);
+        var ring = '<svg xmlns="http://www.w3.org/2000/svg" width="106" height="106" viewBox="0 0 100 100" style="width:106px;height:106px;display:block;">' +
+          '<circle cx="50" cy="50" r="48" fill="' + tint.bg + '" stroke="#FFFFFF" stroke-width="1.8"/>' +
+          '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + tint.track + '" stroke-width="4.5"/>' +
+          (progress > 0.02 ? '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + tint.line + '" stroke-width="4.5" stroke-linecap="round" stroke-dasharray="' + (circumference * progress) + ' ' + circumference + '" transform="rotate(-90 50 50)"/>' : '') +
+          '</svg>';
+        var iconTop = vTxt == null ? 26 : 15;
+        return '<div style="width:' + size + 'px;height:' + size + 'px;margin:0 auto;position:relative;">' + ring +
+          '<div style="position:absolute;left:0;top:' + iconTop + 'px;width:' + size + 'px;height:' + iconSize + 'px;display:flex;align-items:center;justify-content:center;">' + iconMarkup + '</div>' +
+          (vTxt != null ? '<div style="position:absolute;left:0;top:57px;width:' + size + 'px;text-align:center;font-size:' + vSize + 'px;font-weight:900;line-height:1;color:' + tint.text + ';letter-spacing:-.02em;">' + vTxt + '</div>' : '') +
+          '</div>';
       }
 
       /* Historia WhatsApp 9:16 · modelo de referencia · colores SIGP */
@@ -9548,16 +10385,18 @@ var ReportKit = (function () {
       var REPORT_LOGO_RIGHT_SRC = "logo2.png.png";
 
       /* Iconos propios: SVG vectoriales en línea (no dependen de internet) */
-      var icoForecast = WIcon.weather(codeToday, isDayNow, 126);
-      var icoM = WIcon.weather(morning.code, true, 90);
-      var icoA = WIcon.weather(afternoon.code, true, 90);
-      var icoN = WIcon.weather(night.code, false, 90);
-      var icoSunR = WIcon.svg("sunrise", 52);
-      var icoSunS = WIcon.svg("sunset", 52);
-      var icoThermo = WIcon.svg("thermo", 38);
-      var icoDrop = WIcon.svg("drop", 30);
-      var icoFeels = WIcon.svg("heat", 34);        /* sensación térmica (día) */
-      var icoFeelsSm = WIcon.svg("heat", 27);      /* sensación térmica (franjas) */
+      /* El pronóstico principal siempre muestra el símbolo diurno porque el
+         período del reporte inicia a las 06:00, aunque se genere de noche. */
+      var icoForecast = iconoClimaInstitucional(codeToday, true, 126);
+      var icoM = iconoClimaInstitucional(morning.code, true, 90);
+      var icoA = iconoClimaInstitucional(afternoon.code, true, 90);
+      var icoN = iconoClimaInstitucional(night.code, false, 90);
+      var icoSunR = iconoProfesionalPDF("sunrise", 52);
+      var icoSunS = iconoProfesionalPDF("sunset", 52);
+      var icoThermo = iconoProfesionalPDF("thermo", 38);
+      var icoDrop = iconoProfesionalPDF("drop", 30);
+      var icoFeels = iconoProfesionalPDF("heat", 25);       /* sensación térmica (día) */
+      var icoFeelsSm = iconoProfesionalPDF("heat", 20);     /* sensación térmica (franjas) */
 
       wrap.innerHTML =
         '<div id="flyer-card" style="' +
@@ -9631,9 +10470,9 @@ var ReportKit = (function () {
         icoThermo + "<span>Máx: " + maxStr + " / Mín: " + minStr + "</span>" +
         (feelsMax != null || feelsMin != null
           ? '<span style="width:1px;height:26px;background:#d8e3db;"></span>' +
-            '<span style="font-size:23px;font-weight:800;color:#b9761a;">Sens ' +
+            '<span style="display:inline-flex;align-items:center;gap:3px;font-size:23px;font-weight:800;color:#b9761a;">' + icoFeels + '<span>Sens ' +
             (feelsMax != null ? feelsMax + "°C" : "--") + " / " +
-            (feelsMin != null ? feelsMin + "°C" : "--") + "</span>"
+            (feelsMin != null ? feelsMin + "°C" : "--") + "</span></span>"
           : "") + "</div>" +
         "</div></div></div>" +
 
@@ -9657,7 +10496,7 @@ var ReportKit = (function () {
         '<div style="font-size:21px;font-weight:600;color:#2e5a45;margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
         icoThermo + " " + String(morning.tMin) + "–" + String(morning.tMax) + "°C" +
         ((morning.fMin != null || morning.fMax != null)
-          ? '<span style="font-size:18.5px;font-weight:800;color:#b9761a;">· Sens ' + morning.fMin + "°–" + morning.fMax + "°</span>"
+          ? '<span style="display:inline-flex;align-items:center;gap:2px;font-size:18.5px;font-weight:800;color:#b9761a;">' + icoFeelsSm + '<span>Sens ' + morning.fMin + "°–" + morning.fMax + "°</span></span>"
           : "") + "</div>" +
 
         '<div style="font-size:22px;font-weight:600;color:#2e7d6f;margin-top:6px;display:flex;align-items:center;gap:6px;">' +
@@ -9672,7 +10511,7 @@ var ReportKit = (function () {
         '<div style="font-size:21px;font-weight:600;color:#2e5a45;margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
         icoThermo + " " + String(afternoon.tMin) + "–" + String(afternoon.tMax) + "°C" +
         ((afternoon.fMin != null || afternoon.fMax != null)
-          ? '<span style="font-size:18.5px;font-weight:800;color:#b9761a;">· Sens ' + afternoon.fMin + "°–" + afternoon.fMax + "°</span>"
+          ? '<span style="display:inline-flex;align-items:center;gap:2px;font-size:18.5px;font-weight:800;color:#b9761a;">' + icoFeelsSm + '<span>Sens ' + afternoon.fMin + "°–" + afternoon.fMax + "°</span></span>"
           : "") + "</div>" +
 
         '<div style="font-size:22px;font-weight:600;color:#2e7d6f;margin-top:6px;display:flex;align-items:center;gap:6px;">' +
@@ -9691,7 +10530,7 @@ var ReportKit = (function () {
         '<div style="font-size:21px;font-weight:600;color:#2e5a45;margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
         icoThermo + " " + String(night.tMin) + "–" + String(night.tMax) + "°C" +
         ((night.fMin != null || night.fMax != null)
-          ? '<span style="font-size:18.5px;font-weight:800;color:#b9761a;">· Sens ' + night.fMin + "°–" + night.fMax + "°</span>"
+          ? '<span style="display:inline-flex;align-items:center;gap:2px;font-size:18.5px;font-weight:800;color:#b9761a;">' + icoFeelsSm + '<span>Sens ' + night.fMin + "°–" + night.fMax + "°</span></span>"
           : "") + "</div>" +
 
         '<div style="font-size:22px;font-weight:600;color:#2e7d6f;margin-top:6px;display:flex;align-items:center;gap:6px;">' +
@@ -9725,7 +10564,7 @@ var ReportKit = (function () {
          La tarjeta mide 1080x1920 con overflow:hidden. Si algún día el texto
          ocupa más (avisos largos, nombres largos, etc.) se ajusta solo:
          1º recorta relleno inferior sobrante, 2º si aún no cabe, la caja crece
-         y el PDF se exporta proporcional (no se deforma ni se corta nada). */
+         y el archivo elegido se exporta proporcional (sin deformar ni recortar). */
       function ajustarAlto() {
         var cuerpo = card.children[card.children.length - 1];
         var alto = card.scrollHeight;
@@ -9768,7 +10607,7 @@ var ReportKit = (function () {
       function capturar() {
         return html2canvas(card, {
           backgroundColor: null,
-          scale: 2,
+          scale: captureScale,
           useCORS: true,
           allowTaint: false,
           logging: false
@@ -9776,16 +10615,59 @@ var ReportKit = (function () {
       }
 
       function exportar(canvas) {
-        /* JPEG de alta calidad: el PDF pasa de ~33 MB a ~1 MB sin pérdida visible */
-        var img = canvas.toDataURL("image/jpeg", 0.95);
-        var jsPDF = window.jspdf.jsPDF;
-        var pw = 108;
-        /* alto proporcional al contenido: si el reporte creciera, el PDF crece igual
-           (nunca se recorta ni se deforma lo de abajo) */
-        var ph = Math.round(pw * (card.clientHeight / STORY_W) * 100) / 100;
-        var doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [pw, ph], compress: true });
-        doc.addImage(img, "JPEG", 0, 0, pw, ph);
-        doc.save("reporte-climatico-simon-bolivar-" + todayStr + ".pdf");
+        if (outputFormat === "png") {
+          /* PNG verdadero y lossless: no se recomprime como JPEG ni se reduce tamaño. */
+          return new Promise(function (resolve, reject) {
+            try {
+              canvas.toBlob(function (blob) {
+                try {
+                  if (!blob) { reject(new Error("No se pudo codificar el PNG.")); return; }
+                  var url = URL.createObjectURL(blob);
+                  var link = document.createElement("a");
+                  link.href = url;
+                  link.download = "reporte-climatico-simon-bolivar-" + todayStr + ".png";
+                  link.style.display = "none";
+                  document.body.appendChild(link);
+                  link.click();
+                  link.remove();
+                  window.setTimeout(function () { URL.revokeObjectURL(url); }, 30000);
+                  resolve();
+                } catch (eBlob) { reject(eBlob); }
+              }, "image/png");
+            } catch (ePng) { reject(ePng); }
+          });
+        }
+        try {
+          /* PDF optimizado; conserva la escala y compresión previas. */
+          var img = canvas.toDataURL("image/jpeg", 0.95);
+          var jsPDF = window.jspdf.jsPDF;
+          var pw = 108;
+          /* alto proporcional al contenido: nunca se recorta ni se deforma. */
+          var ph = Math.round(pw * (card.clientHeight / STORY_W) * 100) / 100;
+          var doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [pw, ph], compress: true });
+          doc.addImage(img, "JPEG", 0, 0, pw, ph);
+          doc.save("reporte-climatico-simon-bolivar-" + todayStr + ".pdf");
+          return Promise.resolve();
+        } catch (ePdf) { return Promise.reject(ePdf); }
+      }
+
+      function exportarConRespaldo(canvas) {
+        return exportar(canvas).catch(function (errorExport) {
+          var mensaje = String(errorExport && errorExport.message || "");
+          var errorSeguridad = !!(errorExport && errorExport.name === "SecurityError") || /taint|origin|security/i.test(mensaje);
+          var logosBox = card.querySelector("#flyer-logos");
+          if (logosBox && logosBox.parentNode && (outputFormat === "pdf" || errorSeguridad)) {
+            /* En file:// algunos navegadores bloquean la lectura de imágenes locales. */
+            logosBox.parentNode.removeChild(logosBox);
+            return capturar().then(exportarConRespaldo);
+          }
+          if (outputFormat === "png" && captureScale > 2) {
+            /* Si el navegador no alcanza a codificar 4×, baja gradualmente a 3×/2×. */
+            captureScale -= 1;
+            return capturar().then(exportarConRespaldo);
+          }
+          throw errorExport;
+        });
       }
 
       waitImages(card).then(function () {
@@ -9794,20 +10676,12 @@ var ReportKit = (function () {
         ajustarAlto();
         return capturar();
       }).then(function (canvas) {
-        var img;
-        try {
-          img = canvas.toDataURL("image/jpeg", 0.95);
-        } catch (eSec) {
-          /* Si un navegador local marca las imágenes como externas, el PDF se
-             reintenta sin el grupo de logos; la descarga siempre se conserva. */
-          var logosBox = card.querySelector("#flyer-logos");
-          if (logosBox && logosBox.parentNode) logosBox.parentNode.removeChild(logosBox);
-          return capturar().then(function (c2) { exportar(c2); });
-        }
-        exportar(canvas);
+        return exportarConRespaldo(canvas);
       }).catch(function (err) {
         console.error(err);
-        self.showError("NO SE PUDO GENERAR EL FLYER. INTENTA DE NUEVO.");
+        self.showError(outputFormat === "png"
+          ? "NO SE PUDO GENERAR EL PNG. INTENTA DE NUEVO."
+          : "NO SE PUDO GENERAR EL PDF. INTENTA DE NUEVO.");
       }).finally(function () {
         self.showLoad(false);
         try { document.body.removeChild(wrap); } catch (eR) {}
@@ -9825,5 +10699,5 @@ var ReportKit = (function () {
   });
 })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4279b0a1b567425',t:'MTc5MDY0OTQ0Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a468a3ac2b4ab867',t:'MTc5MTMzMTM3MA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4279b0a1b567425',t:'MTc5MDY0OTQ0Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
