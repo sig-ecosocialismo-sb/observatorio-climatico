@@ -12843,159 +12843,132 @@ var ReportKit = (function () {
       var icoFeels = iconoProfesionalPDF("heat", 25);       /* sensación térmica (día) */
       var icoFeelsSm = iconoProfesionalPDF("heat", 20);     /* sensación térmica (franjas) */
 
+      /* ===== REPORTE DIARIO · diseño nuevo (mapa de calles de fondo, líneas finas) ===== */
+      var NR_LINE = function (d, extra) {
+        return '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block;"' + (extra || "") + '>' + d + "</svg>";
+      };
+      var NR_ICON = {
+        drop: '<path d="M12 3s-6 7-6 11a6 6 0 0 0 12 0c0-4-6-11-6-11z"/>',
+        sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+        cloud: '<path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.4A3.5 3.5 0 1 1 17 18z"/>',
+        rain: '<path d="M7 15a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.4A3.5 3.5 0 1 1 17 15z"/><path d="M9 18v2M13 18v2M17 18v2"/>',
+        moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+        sunrise: '<path d="M3 17h18M7 13a5 5 0 0 1 10 0M12 5v2M5.6 8.6l1.4 1.4M18.4 8.6l-1.4 1.4"/>',
+        sunset: '<path d="M3 17h18M7 13a5 5 0 0 1 10 0M12 9v-2M5.6 12.6l1.4-1.4M18.4 12.6l-1.4-1.4"/>',
+        umbrella: '<path d="M3 12a9 9 0 0 1 18 0z"/><path d="M12 12v6a2 2 0 0 1-4 0"/>',
+        bottle: '<path d="M9 3h6v3"/><path d="M9 6h6v2l1 2v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V10l1-2z"/>',
+        clock: '<circle cx="12" cy="12" r="9"/><path d="M12 8v4l2.5 2.5"/>',
+        wind: '<path d="M3 9h11a3 3 0 1 0-3-3M3 15h14a3 3 0 1 1-3 3"/>'
+      };
+      function nrRecIcon(t) {
+        t = String(t || "");
+        if (/paraguas|lluvia/i.test(t)) return NR_ICON.umbrella;
+        if (/UV|protect|gorra|sol/i.test(t)) return NR_ICON.sun;
+        if (/hidrat|agua|bebe/i.test(t)) return NR_ICON.bottle;
+        return NR_ICON.clock;
+      }
+      /* Mosaico de tiles de calles (Esri, con CORS) centrado en el municipio */
+      var NR_LAT = 10.14, NR_LON = -64.66, NR_Z = 12;
+      var nrCx = (NR_LON + 180) / 360 * 256 * Math.pow(2, NR_Z);
+      var nrLr = NR_LAT * Math.PI / 180;
+      var nrCy = (1 - Math.log(Math.tan(nrLr) + 1 / Math.cos(nrLr)) / Math.PI) / 2 * 256 * Math.pow(2, NR_Z);
+      var nrX0 = nrCx - STORY_W / 2, nrY0 = nrCy - STORY_H / 2;
+      var nrTiles = "";
+      for (var nrTy = Math.floor(nrY0 / 256); nrTy <= Math.floor((nrY0 + STORY_H) / 256); nrTy++) {
+        for (var nrTx = Math.floor(nrX0 / 256); nrTx <= Math.floor((nrX0 + STORY_W) / 256); nrTx++) {
+          nrTiles += '<img crossorigin="anonymous" alt="" src="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/' +
+            NR_Z + "/" + nrTy + "/" + nrTx + '" style="position:absolute;width:256px;height:256px;left:' +
+            Math.round(nrTx * 256 - nrX0) + "px;top:" + Math.round(nrTy * 256 - nrY0) + 'px;"/>';
+        }
+      }
+      var nrRain = Math.max(Number(morning.rainP) || 0, Number(afternoon.rainP) || 0, Number(night.rainP) || 0);
+      var nrUv = "--";
+      var nrRecs = (plan.advisories || []).slice(0, 4);
+      (plan.advisories || []).forEach(function (a) { if (/UV/i.test(String(a.title)) && a.value != null) nrUv = String(a.value); });
+      var nrPer = function (ico, title, cond, t, sens, rain) {
+        return '<div style="background:rgba(8,31,26,.80);border-top:3px solid #B4D445;border-radius:0 0 20px 20px;padding:22px 22px 24px;">' +
+          '<div style="display:flex;align-items:center;gap:10px;color:#8fb8a2;">' + NR_LINE(ico) +
+          '<span style="font-size:18px;letter-spacing:.14em;font-weight:700;">' + title + "</span></div>" +
+          '<div style="font-size:30px;font-weight:800;color:#fff;margin-top:12px;line-height:1.1;min-height:66px;">' + cond + "</div>" +
+          '<div style="font-size:22px;color:#cfe3d6;margin-top:12px;"><b style="color:#fff;">' + t + "</b> · sens " + sens + "</div>" +
+          '<div style="font-size:22px;font-weight:700;color:#6fd3c4;margin-top:8px;">Lluvia ' + rain + "%</div></div>";
+      };
+      var nrMet = function (ico, k, v, s) {
+        return '<div style="border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:22px 22px 24px;background:rgba(8,31,26,.78);">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;color:#B4D445;"><span style="font-size:16px;letter-spacing:.18em;color:#8fb8a2;font-weight:700;text-transform:uppercase;">' + k + "</span>" + NR_LINE(ico) + "</div>" +
+          '<div style="font-size:52px;font-weight:800;color:#fff;margin-top:12px;line-height:1;">' + v + "</div>" +
+          '<div style="font-size:18px;color:#9fc2ad;margin-top:10px;">' + s + "</div></div>";
+      };
+      var nrRecHtml = nrRecs.map(function (a) {
+        return '<div style="border-left:1px solid rgba(180,212,69,.45);padding:6px 0 6px 18px;">' +
+          '<div style="color:#B4D445;">' + NR_LINE(nrRecIcon(a.title)) + "</div>" +
+          '<div style="font-size:22px;font-weight:800;color:#fff;margin-top:12px;">' + a.title + "</div>" +
+          '<div style="font-size:18px;color:#9fc2ad;margin-top:6px;line-height:1.3;">' + (a.note || "") + "</div></div>";
+      }).join("");
+
       wrap.innerHTML =
-        '<div id="flyer-card" style="' +
-        "width:" + STORY_W + "px;height:" + STORY_H + "px;box-sizing:border-box;" +
-        "font-family:'Segoe UI',system-ui,-apple-system,sans-serif;margin:0;padding:0;" +
-        "background:linear-gradient(180deg,#B4D445 0%,#7cb342 12%,#135242 28%,#0d3d32 36%,#eef6ea 36.1%,#f2f8f0 100%);" +
-        'overflow:hidden;color:#0d3d32;position:relative;">' +
+        '<div id="flyer-card" style="width:' + STORY_W + "px;height:" + STORY_H + "px;box-sizing:border-box;" +
+        "font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;margin:0;padding:0;overflow:hidden;position:relative;" +
+        "background:#0b2e26;color:#e8f3ec;\">" +
+        '<div style="position:absolute;inset:0;overflow:hidden;">' + nrTiles + "</div>" +
+        '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,31,26,.80) 0%,rgba(8,31,26,.50) 30%,rgba(8,31,26,.45) 55%,rgba(8,31,26,.82) 88%,rgba(8,31,26,.92) 100%);"></div>' +
+        '<div style="position:absolute;left:64px;right:64px;top:0;bottom:0;">' +
 
-        /* ===== CABECERA ===== */
-        '<div style="padding:56px 48px 40px;position:relative;box-sizing:border-box;">' +
-
-        /* Dos logos oficiales en una fila, dentro del margen superior derecho.
-           Se ajustan manteniendo su proporción; el logo derecho tiene un margen
-           extra y no se recorta para que se vea completo. Si faltan, no hay
-           círculo, caja ni hueco visible en el flyer. */
-        '<div id="flyer-logos" style="display:none;position:absolute;left:48px;right:48px;top:34px;height:130px;' +
-        'align-items:center;justify-content:space-between;gap:10px;z-index:2;">' +
-        '<div style="margin-left:-52px;position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
-        '<img src="' + REPORT_LOGO_LEFT_SRC + '" alt="Logo institucional izquierdo" ' +
-        'style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" ' +
-        "onload=\"this.style.display='block';this.parentNode.parentNode.style.display='flex';\" " +
-        "onerror=\"this.style.display='none';this.parentNode.style.display='none';\" /></div>" +
+        /* Logos */
+        '<div id="flyer-logos" style="display:none;position:absolute;left:-16px;right:-16px;top:34px;height:130px;align-items:center;justify-content:space-between;z-index:2;">' +
+        '<div style="position:relative;margin-left:-30px;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
+        '<img src="' + REPORT_LOGO_LEFT_SRC + '" alt="Logo institucional izquierdo" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" ' +
+        "onload=\"this.style.display='block';this.parentNode.parentNode.style.display='flex';\" onerror=\"this.style.display='none';this.parentNode.style.display='none';\" /></div>" +
         '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
-        '<img src="' + REPORT_LOGO_RIGHT_SRC + '" alt="Logo institucional derecho" ' +
-        'style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" ' +
-        "onload=\"this.style.display='block';this.parentNode.parentNode.style.display='flex';\" " +
-        "onerror=\"this.style.display='none';this.parentNode.style.display='none';\" /></div></div>" +
+        '<img src="' + REPORT_LOGO_RIGHT_SRC + '" alt="Logo institucional derecho" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" ' +
+        "onload=\"this.style.display='block';this.parentNode.parentNode.style.display='flex';\" onerror=\"this.style.display='none';this.parentNode.style.display='none';\" /></div></div>" +
 
-        '<div style="margin-top:162px;max-width:70%;">' +
-        '<div style="font-size:64px;font-weight:900;line-height:1.02;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.18);">REPORTE<br/>CLIMÁTICO DIARIO</div>' +
-        '<div style="margin-top:18px;font-size:28px;font-weight:500;color:rgba(255,255,255,.92);">' + dateLong + "</div>" +
-        '<div style="margin-top:8px;font-size:30px;font-weight:800;color:#B4D445;">' + place + "</div>" +
-        "</div>" +
-
-        /* Amanecer / Atardecer */
-        '<div style="margin-top:32px;display:flex;gap:18px;">' +
-        '<div style="flex:1;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);' +
-        'border-radius:22px;padding:16px 20px;display:flex;align-items:center;gap:16px;">' +
-        '<div style="width:64px;height:64px;border-radius:50%;overflow:hidden;flex-shrink:0;' +
-        'box-shadow:0 4px 12px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;background:#FFF6E4;box-shadow:0 4px 12px rgba(0,0,0,.2),inset 0 0 0 2px rgba(255,255,255,.7);">' +
-        icoSunR + "</div>" +
-        '<div><div style="font-size:16px;font-weight:800;color:#B4D445;letter-spacing:.04em;">AMANECER</div>' +
-        '<div style="font-size:30px;font-weight:900;color:#fff;margin-top:2px;">' + sunR + "</div></div></div>" +
-        '<div style="flex:1;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);' +
-        'border-radius:22px;padding:16px 20px;display:flex;align-items:center;gap:16px;">' +
-        '<div style="width:64px;height:64px;border-radius:50%;overflow:hidden;flex-shrink:0;' +
-        'box-shadow:0 4px 12px rgba(0,0,0,.2);display:flex;align-items:center;justify-content:center;background:#FFF0E6;box-shadow:0 4px 12px rgba(0,0,0,.2),inset 0 0 0 2px rgba(255,255,255,.7);">' +
-        icoSunS + "</div>" +
-        '<div><div style="font-size:16px;font-weight:800;color:#ffb74d;letter-spacing:.04em;">ATARDECER</div>' +
-        '<div style="font-size:30px;font-weight:900;color:#fff;margin-top:2px;">' + sunS + "</div></div></div>" +
-        "</div></div>" +
-
-        /* ===== CUERPO CLARO ===== */
-        '<div style="padding:6px 44px 26px;box-sizing:border-box;">' +
+        /* Título */
+        '<div style="position:absolute;top:196px;left:0;right:0;height:1px;background:linear-gradient(90deg,#B4D445,rgba(180,212,69,0));"></div>' +
+        '<div style="position:absolute;top:236px;left:0;font-size:20px;letter-spacing:.28em;color:#B4D445;font-weight:700;text-transform:uppercase;">Observatorio climático · SIGP</div>' +
+        '<div style="position:absolute;top:280px;left:0;right:0;white-space:nowrap;font-size:84px;line-height:.98;font-weight:800;color:#fff;">Reporte<br>climático diario</div>' +
+        '<div style="position:absolute;top:500px;left:0;right:0;display:flex;justify-content:space-between;align-items:baseline;">' +
+        '<div style="font-size:26px;color:#cfe3d6;">' + dateLong + "</div>" +
+        '<div style="font-size:26px;color:#B4D445;font-weight:700;letter-spacing:.04em;">' + String(place).toUpperCase() + "</div></div>" +
 
         /* Pronóstico */
-        '<div style="background:#fff;border-radius:32px;padding:28px 32px;margin-bottom:18px;' +
-        'box-shadow:0 10px 28px rgba(13,61,50,.1);">' +
-        '<div style="display:flex;align-items:center;gap:24px;">' +
-        '<div style="flex-shrink:0;width:130px;height:130px;display:flex;align-items:center;justify-content:center;">' +
-        icoForecast + "</div>" +
-        '<div style="flex:1;">' +
-        '<div style="font-size:22px;font-weight:800;color:#6a9a3a;letter-spacing:.02em;">PRONÓSTICO DE HOY' +
-        (esMuni ? " DEL MUNICIPIO SIMÓN BOLÍVAR" : "") + "</div>" +
-        '<div style="font-size:48px;font-weight:900;color:#0d3d32;line-height:1.08;margin-top:6px;">' + cond + "</div>" +
-        '<div style="margin-top:12px;font-size:26px;font-weight:700;color:#2e5a45;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
-        icoThermo + "<span>Máx: " + maxStr + " / Mín: " + minStr + "</span>" +
-        (feelsMax != null || feelsMin != null
-          ? '<span style="width:1px;height:26px;background:#d8e3db;"></span>' +
-            '<span style="display:inline-flex;align-items:center;gap:3px;font-size:23px;font-weight:800;color:#b9761a;">' + icoFeels + '<span>Sens ' +
-            (feelsMax != null ? feelsMax + "°C" : "--") + " / " +
-            (feelsMin != null ? feelsMin + "°C" : "--") + "</span></span>"
-          : "") + "</div>" +
-        "</div></div></div>" +
+        '<div style="position:absolute;top:600px;left:0;right:0;height:290px;border:1px solid rgba(180,212,69,.35);border-radius:28px;background:rgba(8,31,26,.72);padding:42px 46px;display:flex;justify-content:space-between;">' +
+        '<div><div style="font-size:18px;letter-spacing:.24em;color:#B4D445;font-weight:700;">PRONÓSTICO HOY</div>' +
+        '<div style="font-size:76px;font-weight:800;color:#fff;margin-top:14px;line-height:1;">' + cond + "</div>" +
+        '<div style="margin-top:26px;font-size:26px;color:#cfe3d6;">Sensación <b style="color:#f5b24a;">' +
+        (feelsMax != null ? feelsMax + "°C" : "--") + " / " + (feelsMin != null ? feelsMin + "°C" : "--") + "</b></div></div>" +
+        '<div style="text-align:right;"><div style="font-size:150px;font-weight:800;line-height:.9;color:#fff;letter-spacing:-.03em;">' +
+        (maxT != null ? maxT : "--") + '<sup style="font-size:60px;vertical-align:top;position:relative;top:14px;">°</sup></div>' +
+        '<div style="margin-top:18px;font-size:34px;color:#9fd0b5;font-weight:600;">Mín <span style="color:#6fb3ff;">' + minStr + "</span></div></div></div>" +
 
-        /* Resumen ejecutivo (redactado por ReportKit) */
-        '<div style="background:#fff;border-radius:32px;padding:26px 32px;margin-bottom:22px;' +
-        'box-shadow:0 10px 28px rgba(13,61,50,.1);">' +
-        '<div style="font-size:28px;font-weight:900;color:#0d3d32;margin-bottom:12px;">RESUMEN EJECUTIVO</div>' +
-        '<div style="font-size:26px;line-height:1.45;font-weight:500;color:#2e4a3c;">' + resumen + "</div>" +
-        "</div>" +
+        /* Métricas */
+        '<div style="position:absolute;top:930px;left:0;right:0;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">' +
+        nrMet(NR_ICON.rain, "Lluvia", nrRain + "%", "máx. del día") +
+        nrMet(NR_ICON.sun, "Índice UV", nrUv, "radiación") +
+        nrMet(NR_ICON.wind, "Sensación", (feelsMax != null ? feelsMax : "--") + "°", "máxima") +
+        nrMet(NR_ICON.cloud, "Mínima", minStr, "temperatura") + "</div>" +
 
-        '<div style="font-size:28px;font-weight:900;color:#0d3d32;margin:4px 4px 14px;">DESGLOSE POR HORARIOS</div>' +
+        /* Horarios */
+        '<div style="position:absolute;top:1160px;left:0;right:0;font-size:18px;letter-spacing:.24em;color:#B4D445;font-weight:700;">DESGLOSE POR HORARIO</div>' +
+        '<div style="position:absolute;top:1208px;left:0;right:0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">' +
+        nrPer(NR_ICON.sunrise, "MAÑANA · 06–12", mCond, morning.tMin + "–" + morning.tMax + " °C", (morning.fMin != null ? morning.fMin + "–" + morning.fMax + "°" : "--"), morning.rainP) +
+        nrPer(NR_ICON.rain, "TARDE · 12–18", aCond, afternoon.tMin + "–" + afternoon.tMax + " °C", (afternoon.fMin != null ? afternoon.fMin + "–" + afternoon.fMax + "°" : "--"), afternoon.rainP) +
+        nrPer(NR_ICON.moon, "NOCHE · 18–06", nCond, night.tMin + "–" + night.tMax + " °C", (night.fMin != null ? night.fMin + "–" + night.fMax + "°" : "--"), night.rainP) + "</div>" +
 
-        /* Mañana | Tarde */
-        '<div style="display:flex;gap:16px;margin-bottom:16px;">' +
-        '<div style="flex:1;background:#fff;border-radius:28px;padding:22px 20px;box-shadow:0 8px 22px rgba(13,61,50,.09);">' +
-        '<div style="display:flex;gap:14px;align-items:flex-start;">' +
-        '<div style="flex-shrink:0;">' + icoM + "</div>" +
-        '<div>' +
-        '<div style="font-size:22px;font-weight:900;color:#0d3d32;">MAÑANA (06:00 – 12:00)</div>' +
-        '<div style="font-size:24px;font-weight:800;color:#6a9a3a;margin-top:6px;">' + mCond + "</div>" +
-        '<div style="font-size:21px;font-weight:600;color:#2e5a45;margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
-        icoThermo + " " + String(morning.tMin) + "–" + String(morning.tMax) + "°C" +
-        ((morning.fMin != null || morning.fMax != null)
-          ? '<span style="display:inline-flex;align-items:center;gap:2px;font-size:18.5px;font-weight:800;color:#b9761a;">' + icoFeelsSm + '<span>Sens ' + morning.fMin + "°–" + morning.fMax + "°</span></span>"
-          : "") + "</div>" +
+        /* Recomendaciones */
+        '<div style="position:absolute;top:1490px;left:0;right:0;font-size:18px;letter-spacing:.24em;color:#B4D445;font-weight:700;">RECOMENDACIONES</div>' +
+        '<div style="position:absolute;top:1530px;left:0;right:0;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">' + nrRecHtml + "</div>" +
 
-        '<div style="font-size:22px;font-weight:600;color:#2e7d6f;margin-top:6px;display:flex;align-items:center;gap:6px;">' +
-        icoDrop + " Lluvia: " + morning.rainP + "%</div>" +
-        "</div></div></div>" +
-        '<div style="flex:1;background:#fff;border-radius:28px;padding:22px 20px;box-shadow:0 8px 22px rgba(13,61,50,.09);">' +
-        '<div style="display:flex;gap:14px;align-items:flex-start;">' +
-        '<div style="flex-shrink:0;">' + icoA + "</div>" +
-        '<div>' +
-        '<div style="font-size:22px;font-weight:900;color:#0d3d32;">TARDE (12:00 – 18:00)</div>' +
-        '<div style="font-size:24px;font-weight:800;color:#6a9a3a;margin-top:6px;">' + aCond + "</div>" +
-        '<div style="font-size:21px;font-weight:600;color:#2e5a45;margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
-        icoThermo + " " + String(afternoon.tMin) + "–" + String(afternoon.tMax) + "°C" +
-        ((afternoon.fMin != null || afternoon.fMax != null)
-          ? '<span style="display:inline-flex;align-items:center;gap:2px;font-size:18.5px;font-weight:800;color:#b9761a;">' + icoFeelsSm + '<span>Sens ' + afternoon.fMin + "°–" + afternoon.fMax + "°</span></span>"
-          : "") + "</div>" +
+        /* Resumen */
+        '<div style="position:absolute;top:1700px;left:0;right:0;border-left:4px solid #B4D445;padding:14px 0 14px 26px;background:rgba(8,31,26,.80);border-radius:0 16px 16px 0;">' +
+        '<div style="font-size:18px;letter-spacing:.2em;color:#B4D445;font-weight:700;">RESUMEN</div>' +
+        '<div style="font-size:22px;line-height:1.4;color:#e8f3ec;margin-top:8px;">' + resumen + "</div></div>" +
 
-        '<div style="font-size:22px;font-weight:600;color:#2e7d6f;margin-top:6px;display:flex;align-items:center;gap:6px;">' +
-        icoDrop + " Lluvia: " + afternoon.rainP + "%</div>" +
-        "</div></div></div>" +
-        "</div>" +
+        /* Sol */
+        '<div style="position:absolute;top:1866px;left:0;right:0;display:flex;justify-content:space-between;font-size:22px;color:#cfe3d6;">' +
+        '<div>Amanecer <b style="color:#fff;margin-left:10px;">' + sunR + "</b></div>" +
+        '<div>Atardecer <b style="color:#fff;margin-left:10px;">' + sunS + "</b></div></div>" +
 
-        /* Noche centrada */
-        '<div style="display:flex;justify-content:center;margin-bottom:22px;">' +
-        '<div style="width:78%;background:#fff;border-radius:28px;padding:22px 24px;box-shadow:0 8px 22px rgba(13,61,50,.09);">' +
-        '<div style="display:flex;gap:16px;align-items:flex-start;">' +
-        '<div style="flex-shrink:0;">' + icoN + "</div>" +
-        '<div>' +
-        '<div style="font-size:24px;font-weight:900;color:#0d3d32;">NOCHE (18:00 – 06:00)</div>' +
-        '<div style="font-size:26px;font-weight:800;color:#135242;margin-top:6px;">' + nCond + "</div>" +
-        '<div style="font-size:21px;font-weight:600;color:#2e5a45;margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">' +
-        icoThermo + " " + String(night.tMin) + "–" + String(night.tMax) + "°C" +
-        ((night.fMin != null || night.fMax != null)
-          ? '<span style="display:inline-flex;align-items:center;gap:2px;font-size:18.5px;font-weight:800;color:#b9761a;">' + icoFeelsSm + '<span>Sens ' + night.fMin + "°–" + night.fMax + "°</span></span>"
-          : "") + "</div>" +
-
-        '<div style="font-size:22px;font-weight:600;color:#2e7d6f;margin-top:6px;display:flex;align-items:center;gap:6px;">' +
-        icoDrop + " Lluvia: " + night.rainP + "%</div>" +
-        "</div></div></div></div>" +
-
-        /* Alertas y consejos: 4 tarjetas elegidas por ReportKit según el clima */
-        '<div style="background:#fff;border-radius:32px;padding:26px 20px 24px;box-shadow:0 10px 28px rgba(13,61,50,.1);">' +
-        '<div style="font-size:28px;font-weight:900;color:#0d3d32;margin-bottom:20px;text-align:center;">' +
-        (plan.alerts > 0 ? "AVISOS Y CONSEJOS" : "ALERTAS Y CONSEJOS") + "</div>" +
-        '<div style="display:flex;justify-content:space-around;text-align:center;gap:4px;">' +
-        plan.advisories.map(function (a) {
-          var tone = a.sev >= 3 ? "#C93A2E" : a.sev === 2 ? "#B9761A" : "#2e5a45";
-          return '<div style="flex:1;padding:0 4px;">' +
-            adviceCard(a) +
-            '<div style="font-size:18px;font-weight:900;color:#0d3d32;margin-top:10px;line-height:1.15;">' + a.title + "</div>" +
-            '<div style="font-size:16px;font-weight:700;color:' + tone + ';margin-top:5px;line-height:1.25;">' + a.note + "</div>" +
-            "</div>";
-        }).join("") +
-        "</div></div>" +
-
-        '<div style="text-align:center;margin-top:22px;font-size:18px;font-weight:700;letter-spacing:.05em;color:#7a9a7a;">' +
-        (esMuni ? "PROMEDIO DE LAS 6 PARROQUIAS · " : "") +
-        "MUNICIPIO SIMÓN BOLÍVAR · ANZOÁTEGUI · SIGP</div>" +
         "</div></div>";
 
       document.body.appendChild(wrap);
@@ -13140,5 +13113,5 @@ var ReportKit = (function () {
   });
 })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4279b0a1b567425',t:'MTc5MDY0OTQ0Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a46e5ae13c2fc113',t:'MTc5MTM5MTMwMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4910ef60f42d67d',t:'MTc5MTc1NTE5NQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4279b0a1b567425',t:'MTc5MDY0OTQ0Mg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a46e5ae13c2fc113',t:'MTc5MTM5MTMwMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4914c275c6a3198',t:'MTc5MTc1NzcwMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
