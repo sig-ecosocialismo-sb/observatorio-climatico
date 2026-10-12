@@ -2356,56 +2356,123 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
   }
 
   function showReadyDownload(blob, filename) {
-    return new Promise(function (resolve) {
+    return new Promise(function (resolve, reject) {
       var old = document.getElementById("report-ready-download");
       if (old) {
         try { old.remove(); } catch (e0) {}
       }
-      var url = URL.createObjectURL(blob);
+      var url;
+      try {
+        if (!window.URL || typeof window.URL.createObjectURL !== "function") {
+          throw new Error("El navegador no permite crear el archivo para descargar.");
+        }
+        url = window.URL.createObjectURL(blob);
+      } catch (eCreate) {
+        reject(eCreate);
+        return;
+      }
+
+      filename = filename || "reporte";
       var isPdf = /\.pdf$/i.test(filename) || /pdf/i.test(blob.type || "");
       var panel = document.createElement("div");
       panel.id = "report-ready-download";
+      panel.setAttribute("role", "dialog");
+      panel.setAttribute("aria-modal", "true");
+      panel.setAttribute("aria-label", "Descargar reporte");
       panel.style.cssText = "position:fixed;inset:0;z-index:2147483647;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:18px;font-family:Segoe UI,system-ui,sans-serif;";
       panel.innerHTML =
         '<div style="width:min(420px,100%);background:#10201c;border:2px solid #B4D445;border-radius:18px;padding:20px;color:#e8f3ec;text-align:center;">' +
         '<div style="font-weight:900;font-size:18px;color:#B4D445;letter-spacing:.06em;margin-bottom:8px;">REPORTE LISTO</div>' +
-        '<div style="font-size:13px;line-height:1.45;margin-bottom:16px;color:#cfe3d6;">Toca el botón verde para guardar el archivo en tu teléfono.</div>' +
-        '<div style="font-size:12px;color:#9fc2ad;margin-bottom:16px;word-break:break-all;">' + filename + "</div>" +
-        '<a id="report-ready-link" href="' + url + '" download="' + filename + '" style="display:block;width:100%;box-sizing:border-box;text-align:center;background:#B4D445;color:#0d3d32;font-weight:900;text-decoration:none;padding:16px 12px;border-radius:12px;font-size:16px;letter-spacing:.04em;">DESCARGAR AHORA</a>' +
-        (isPdf
-          ? '<a id="report-ready-open" href="' + url + '" target="_blank" rel="noopener" style="display:block;width:100%;box-sizing:border-box;text-align:center;margin-top:10px;background:#243129;color:#e8f3ec;font-weight:800;text-decoration:none;padding:12px;border-radius:12px;border:1px solid #33463f;">ABRIR PDF</a>'
-          : "") +
-        '<button type="button" id="report-ready-close" style="display:block;width:100%;margin-top:10px;background:transparent;color:#9fc2ad;border:none;font-weight:700;padding:10px;font-size:13px;">CERRAR</button>' +
-        "</div>";
+        '<div style="font-size:13px;line-height:1.45;margin-bottom:12px;color:#cfe3d6;">Toca <b>DESCARGAR AHORA</b>. Si el navegador no lo guarda, usa <b>ABRIR / GUARDAR</b> o <b>COMPARTIR</b>.</div>' +
+        '<div id="report-ready-filename" style="font-size:12px;color:#9fc2ad;margin-bottom:14px;word-break:break-all;"></div>' +
+        '<a id="report-ready-link" href="#" style="display:block;width:100%;box-sizing:border-box;text-align:center;background:#B4D445;color:#0d3d32;font-weight:900;text-decoration:none;padding:16px 12px;border-radius:12px;font-size:16px;letter-spacing:.04em;">DESCARGAR AHORA</a>' +
+        '<a id="report-ready-open" href="#" target="_blank" rel="noopener" style="display:block;width:100%;box-sizing:border-box;text-align:center;margin-top:10px;background:#243129;color:#e8f3ec;font-weight:800;text-decoration:none;padding:12px;border-radius:12px;border:1px solid #33463f;">ABRIR / GUARDAR ARCHIVO</a>' +
+        '<button type="button" id="report-ready-share" style="display:none;width:100%;box-sizing:border-box;margin-top:10px;background:#243129;color:#e8f3ec;font-weight:800;padding:12px;border-radius:12px;border:1px solid #33463f;font-size:14px;">COMPARTIR / GUARDAR EN ARCHIVOS</button>' +
+        '<div id="report-ready-share-status" role="status" style="display:none;margin-top:8px;font-size:12px;line-height:1.4;color:#ffd28a;"></div>' +
+        '<button type="button" id="report-ready-close" style="display:block;width:100%;margin-top:8px;background:transparent;color:#9fc2ad;border:none;font-weight:700;padding:10px;font-size:13px;">CERRAR</button>' +
+        '</div>';
       document.body.appendChild(panel);
 
+      var filenameEl = document.getElementById("report-ready-filename");
+      if (filenameEl) filenameEl.textContent = filename;
+      var link = document.getElementById("report-ready-link");
+      var openLink = document.getElementById("report-ready-open");
+      var closeBtn = document.getElementById("report-ready-close");
+      var shareBtn = document.getElementById("report-ready-share");
+      var shareStatus = document.getElementById("report-ready-share-status");
+      if (link) {
+        link.href = url;
+        link.download = filename;
+        link.setAttribute("download", filename);
+      }
+      if (openLink) openLink.href = url;
+
+      var shareFile = null;
+      try {
+        if (window.navigator && typeof navigator.share === "function" && typeof window.File === "function") {
+          shareFile = new File([blob], filename, {
+            type: blob.type || (isPdf ? "application/pdf" : "image/png")
+          });
+          if (typeof navigator.canShare === "function" && !navigator.canShare({ files: [shareFile] })) {
+            shareFile = null;
+          }
+        }
+      } catch (eShareSupport) {
+        shareFile = null;
+      }
+      if (shareBtn && shareFile) shareBtn.style.display = "block";
+
       function cleanup() {
-        try { panel.remove(); } catch (e1) {}
-        window.setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e2) {} }, 120000);
+        try { if (panel.parentNode) panel.parentNode.removeChild(panel); } catch (e1) {}
+        window.setTimeout(function () {
+          try { window.URL.revokeObjectURL(url); } catch (e2) {}
+        }, 120000);
+      }
+      function finish(result) {
+        cleanup();
+        resolve(result);
       }
 
-      var link = document.getElementById("report-ready-link");
       if (link) {
         link.addEventListener("click", function () {
-          /* El toque del usuario sí tiene permiso de descarga. */
+          /* El toque real del usuario habilita la descarga en navegadores móviles. */
+          window.setTimeout(function () { finish(true); }, 600);
+        }, { once: true });
+      }
+      if (openLink) {
+        openLink.addEventListener("click", function () {
+          /* Vista del archivo como alternativa: desde allí se puede guardar/compartir. */
+          window.setTimeout(function () { finish(true); }, 600);
+        }, { once: true });
+      }
+      if (shareBtn && shareFile) {
+        shareBtn.addEventListener("click", function () {
           try {
-            /* Algunos Android necesitan click programático adicional sobre el mismo gesto. */
-            setTimeout(function () { resolve(true); }, 300);
-          } catch (e3) { resolve(true); }
-        }, { once: true });
+            Promise.resolve(navigator.share({
+              title: filename,
+              text: "Reporte generado",
+              files: [shareFile]
+            })).then(function () {
+              finish(true);
+            }).catch(function (eShare) {
+              if (eShare && eShare.name === "AbortError") return;
+              console.error("No se pudo compartir el reporte:", eShare);
+              if (shareStatus) {
+                shareStatus.textContent = "No se pudo abrir el menú Compartir. Prueba ABRIR / GUARDAR ARCHIVO.";
+                shareStatus.style.display = "block";
+              }
+            });
+          } catch (eShareClick) {
+            console.error("No se pudo compartir el reporte:", eShareClick);
+            if (shareStatus) {
+              shareStatus.textContent = "No se pudo abrir el menú Compartir. Prueba ABRIR / GUARDAR ARCHIVO.";
+              shareStatus.style.display = "block";
+            }
+          }
+        });
       }
-      var closeBtn = document.getElementById("report-ready-close");
       if (closeBtn) {
-        closeBtn.onclick = function () {
-          cleanup();
-          resolve(false);
-        };
-      }
-      var openBtn = document.getElementById("report-ready-open");
-      if (openBtn) {
-        openBtn.addEventListener("click", function () {
-          setTimeout(function () { resolve(true); }, 300);
-        }, { once: true });
+        closeBtn.onclick = function () { finish(false); };
       }
     });
   }
@@ -2460,14 +2527,18 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
       doc.addImage(jpeg, "JPEG", 0, 0, pageWidth, pageHeight);
       try {
         var pdfBlob = doc.output("blob");
-        try { doc.save(fileBase + ".pdf"); } catch (eSave) {}
+        if (!pdfBlob) throw new Error("jsPDF no generó el archivo PDF.");
+        /* Un único método de descarga: en móvil doc.save() fuera del gesto
+           puede ser bloqueado y además provoca intentos/descargas duplicadas. */
         return triggerBlobDownload(pdfBlob, fileBase + ".pdf");
       } catch (eOut) {
         try {
-          doc.save(fileBase + ".pdf");
-          return Promise.resolve(true);
-        } catch (eSave2) {
-          return Promise.reject(eOut);
+          var pdfBuffer = doc.output("arraybuffer");
+          if (!pdfBuffer) throw eOut;
+          var fallbackPdf = new Blob([pdfBuffer], { type: "application/pdf" });
+          return triggerBlobDownload(fallbackPdf, fileBase + ".pdf");
+        } catch (eFallbackPdf) {
+          return Promise.reject(eFallbackPdf || eOut);
         }
       }
     } catch (ePdf) {
@@ -13419,5 +13490,5 @@ var ReportKit = (function () {
   });
 })();
   </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a498cb578edc7429',t:'MTc5MTgzNjMxMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
