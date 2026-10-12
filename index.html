@@ -2181,9 +2181,49 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
     }
   }
 
-  /* Compatibilidad: no borra el mapa de fondo. */
+  /* Quita solo recursos que pueden contaminar el canvas en un sitio HTTPS.
+     Se llama como respaldo después de un fallo; no altera el reporte si la
+     captura normal funciona. Conserva imágenes data: y recursos del mismo sitio. */
   function stripReportExternalMedia(root) {
+    if (!root) return;
     stripReportLogosOnly(root);
+    stripReportMapTiles(root);
+
+    var imgs = root.querySelectorAll("img");
+    for (var i = 0; i < imgs.length; i++) {
+      try {
+        var img = imgs[i];
+        var src = img.currentSrc || img.getAttribute("src") || "";
+        if (!src || /^(data:|blob:)/i.test(src)) continue;
+        var external = false;
+        try {
+          var imgUrl = new URL(src, document.baseURI || location.href);
+          external = imgUrl.origin !== location.origin;
+        } catch (eUrl) {}
+        var failed = img.complete && img.naturalWidth === 0;
+        if (external || failed) {
+          img.removeAttribute("src");
+          img.removeAttribute("srcset");
+          img.style.display = "none";
+          img.setAttribute("data-report-media-removed", "true");
+        }
+      } catch (eMedia) {}
+    }
+
+    /* Los SVG pueden contener <image href="https://…"> sin un <img> externo. */
+    var svgImages = root.querySelectorAll("svg image");
+    for (var j = 0; j < svgImages.length; j++) {
+      try {
+        var svgImage = svgImages[j];
+        var href = svgImage.getAttribute("href") || svgImage.getAttributeNS("http://www.w3.org/1999/xlink", "href") || "";
+        if (!href || /^(data:|blob:|#)/i.test(href)) continue;
+        var hrefUrl = new URL(href, document.baseURI || location.href);
+        if (hrefUrl.origin !== location.origin) {
+          svgImage.removeAttribute("href");
+          svgImage.removeAttributeNS("http://www.w3.org/1999/xlink", "href");
+        }
+      } catch (eSvgMedia) {}
+    }
   }
 
   function stripReportMapTiles(root) {
@@ -2192,9 +2232,11 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
     for (var i = 0; i < imgs.length; i++) {
       try {
         var img = imgs[i];
-        var src = img.getAttribute("src") || "";
-        if (src.indexOf("tile/") >= 0 || /arcgisonline|openstreetmap|tile\.openstreetmap/i.test(src)) {
+        var src = img.currentSrc || img.getAttribute("src") || "";
+        var isLeafletTile = img.classList && img.classList.contains("leaflet-tile");
+        if (isLeafletTile || src.indexOf("tile/") >= 0 || /arcgisonline|openstreetmap|tile\.openstreetmap/i.test(src)) {
           img.removeAttribute("src");
+          img.removeAttribute("srcset");
           img.style.display = "none";
         }
       } catch (e2) {}
@@ -2275,37 +2317,35 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
     };
 
     return run(baseOpts).catch(function (err1) {
-      console.warn("Captura 1 falló", err1);
-      /* Quitar imágenes locales que puedan fallar (fondo no subido aún). */
-      try {
-        var imgs = card.querySelectorAll("img");
-        for (var i = 0; i < imgs.length; i++) {
-          var src = imgs[i].getAttribute("src") || "";
-          if (/report-map-bg/i.test(src) || /\.jpe?g|\.png/i.test(src) && src.indexOf("data:") !== 0) {
-            imgs[i].style.display = "none";
-            imgs[i].removeAttribute("src");
-          }
-        }
-      } catch (eImg) {}
+      console.warn("Captura 1 falló; se preparan recursos seguros para el canvas.", err1);
+      /* En GitHub Pages las teselas externas pueden impedir PNG/PDF.
+         Se retiran solo en el reintento; el diseño y el tamaño quedan intactos. */
+      stripReportExternalMedia(card);
       var opts2 = {};
       for (var k in baseOpts) opts2[k] = baseOpts[k];
       opts2.scale = 1;
       opts2.imageTimeout = 3000;
       return run(opts2);
     }).catch(function (err2) {
-      console.warn("Captura 2 falló", err2);
+      console.warn("Captura 2 falló; se reintenta sin imágenes externas.", err2);
+      stripReportExternalMedia(card);
       var opts3 = {
         backgroundColor: "#0b2e26",
         scale: 1,
-        useCORS: false,
-        allowTaint: true,
+        useCORS: true,
+        /* Un canvas exportable debe permanecer limpio de origen. */
+        allowTaint: false,
         logging: false,
         imageTimeout: 1500,
         foreignObjectRendering: false,
         width: w,
         height: h,
         windowWidth: w,
-        windowHeight: h
+        windowHeight: h,
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0
       };
       return run(opts3);
     }).finally(function () {
@@ -13434,15 +13474,14 @@ var ReportKit = (function () {
           var errorSeguridad = !!(errorExport && errorExport.name === "SecurityError") || /taint|origin|security/i.test(mensaje);
           if (errorSeguridad && card) {
             /* Solo si el mapa tainta el canvas se quita como último recurso. */
-            stripReportLogosOnly(card);
-            stripReportMapTiles(card);
+            stripReportExternalMedia(card);
             var logosBox = card.querySelector("#flyer-logos");
             if (logosBox && logosBox.parentNode) logosBox.parentNode.removeChild(logosBox);
             return capturar().then(function (c2) { return exportar(c2); });
           }
           if (captureScale > 1) {
             captureScale = Math.max(1, captureScale - 0.25);
-            stripReportLogosOnly(card);
+            stripReportExternalMedia(card);
             return capturar().then(exportarConRespaldo);
           }
           throw errorExport;
@@ -13490,5 +13529,5 @@ var ReportKit = (function () {
   });
 })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a498cb578edc7429',t:'MTc5MTgzNjMxMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a498cb578edc7429',t:'MTc5MTgzNjMxMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a498db93e834b773',t:'MTc5MTgzNjk3Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
