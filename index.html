@@ -2425,11 +2425,20 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
           }
         } catch (eD) {}
       }
+      /* Conservar SVG de iconos minimalistas (línea); solo ocultar si no tienen tamaño. */
       var svgs = root.querySelectorAll("svg");
       for (var s = 0; s < svgs.length; s++) {
         try {
-          svgs[s].style.display = "none";
-          svgs[s].setAttribute("data-report-zero-size", "1");
+          var svg = svgs[s];
+          var sw = parseInt(svg.getAttribute("width"), 10) || 0;
+          var sh = parseInt(svg.getAttribute("height"), 10) || 0;
+          if (sw < 1 || sh < 1) {
+            svg.setAttribute("width", "24");
+            svg.setAttribute("height", "24");
+          }
+          svg.style.display = "block";
+          svg.style.flexShrink = "0";
+          svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
         } catch (eS) {}
       }
       var cvs = root.querySelectorAll("canvas");
@@ -2498,7 +2507,7 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
         if (!root) return;
         if (mobile) prepareReportForMobileCapture(root);
         sanitizeReportZeroSizeMedia(root);
-        var kill = root.querySelectorAll("img, svg, canvas, video, iframe");
+        var kill = root.querySelectorAll("img, canvas, video, iframe");
         for (var i = 0; i < kill.length; i++) {
           try {
             var tagK = String(kill[i].tagName || "").toLowerCase();
@@ -2518,6 +2527,16 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
               kill[i].removeAttribute("srcset");
             }
           } catch (eK) {}
+        }
+        /* Asegurar SVG de iconos visibles en el clon. */
+        var svgsC = root.querySelectorAll("svg");
+        for (var si = 0; si < svgsC.length; si++) {
+          try {
+            if (!svgsC[si].getAttribute("width")) svgsC[si].setAttribute("width", "24");
+            if (!svgsC[si].getAttribute("height")) svgsC[si].setAttribute("height", "24");
+            svgsC[si].style.display = "block";
+            svgsC[si].setAttribute("xmlns", "http://www.w3.org/2000/svg");
+          } catch (eSvgC) {}
         }
         try {
           root.style.opacity = "1";
@@ -2542,10 +2561,14 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
           if (mobile && !isReportLogoSrc(src) && !isReportMapBgSrc(src) && !/^data:image\//i.test(src)) return true;
           if (el.complete && (el.naturalWidth === 0 || el.naturalHeight === 0)) return true;
         }
-        if (tag === "svg" || tag === "canvas" || tag === "video" || tag === "iframe") {
-          if (mobile) return true;
+        if (tag === "svg") {
+          /* No ignorar iconos SVG del reporte. */
+          return false;
+        }
+        if (tag === "canvas" || tag === "video" || tag === "iframe") {
           if (el.getAttribute("data-report-zero-size") === "1") return true;
           if (tag === "canvas" && (!el.width || !el.height)) return true;
+          if (mobile && tag !== "canvas") return true;
         }
       } catch (eIgn) {}
       return false;
@@ -13559,7 +13582,7 @@ var ReportKit = (function () {
 
       /* ===== REPORTE DIARIO · diseño nuevo (mapa de calles de fondo, líneas finas) ===== */
       var NR_LINE = function (d, extra) {
-        return '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block;"' + (extra || "") + '>' + d + "</svg>";
+        return '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;display:block;overflow:visible;"' + (extra || "") + '>' + d + "</svg>";
       };
       var NR_ICON = {
         drop: '<path d="M12 3s-6 7-6 11a6 6 0 0 0 12 0c0-4-6-11-6-11z"/>',
@@ -13589,30 +13612,30 @@ var ReportKit = (function () {
       var nrRecs = (plan.advisories || []).slice(0, 4);
       (plan.advisories || []).forEach(function (a) { if (/UV/i.test(String(a.title)) && a.value != null) nrUv = String(a.value); });
       var nrPer = function (ico, title, cond, t, sens, rain) {
-        return '<div style="background:rgba(8,31,26,.80);border-top:3px solid #B4D445;border-radius:0 0 20px 20px;padding:22px 22px 24px;">' +
-          '<div style="display:flex;align-items:center;gap:10px;color:#8fb8a2;">' + NR_LINE(ico) +
-          '<span style="font-size:18px;letter-spacing:.14em;font-weight:700;">' + title + "</span></div>" +
-          '<div style="font-size:30px;font-weight:800;color:#fff;margin-top:12px;line-height:1.1;min-height:66px;">' + cond + "</div>" +
-          '<div style="font-size:22px;color:#cfe3d6;margin-top:12px;"><b style="color:#fff;">' + t + "</b> · sens " + sens + "</div>" +
-          '<div style="font-size:22px;font-weight:700;color:#6fd3c4;margin-top:8px;">Lluvia ' + rain + "%</div></div>";
+        return '<div style="background:rgba(8,31,26,.80);border-top:3px solid #B4D445;border-radius:0 0 20px 20px;padding:18px 14px 20px;overflow:hidden;">' +
+          '<div style="display:flex;align-items:center;gap:8px;color:#8fb8a2;white-space:nowrap;">' + NR_LINE(ico) +
+          '<span style="font-size:13px;letter-spacing:.06em;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + title + "</span></div>" +
+          '<div style="font-size:26px;font-weight:800;color:#fff;margin-top:10px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + cond + "</div>" +
+          '<div style="font-size:16px;color:#cfe3d6;margin-top:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><b style="color:#fff;">' + t + "</b> · sens " + sens + "</div>" +
+          '<div style="font-size:16px;font-weight:700;color:#6fd3c4;margin-top:6px;white-space:nowrap;">Lluvia ' + rain + "%</div></div>";
       };
       var nrMet = function (ico, k, v, s) {
-        return '<div style="border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:22px 22px 24px;background:rgba(8,31,26,.78);">' +
-          '<div style="display:flex;align-items:center;justify-content:space-between;color:#B4D445;"><span style="font-size:16px;letter-spacing:.18em;color:#8fb8a2;font-weight:700;text-transform:uppercase;">' + k + "</span>" + NR_LINE(ico) + "</div>" +
-          '<div style="font-size:52px;font-weight:800;color:#fff;margin-top:12px;line-height:1;">' + v + "</div>" +
-          '<div style="font-size:18px;color:#9fc2ad;margin-top:10px;">' + s + "</div></div>";
+        return '<div style="border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:18px 14px 20px;background:rgba(8,31,26,.78);overflow:hidden;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;color:#B4D445;white-space:nowrap;"><span style="font-size:12px;letter-spacing:.08em;color:#8fb8a2;font-weight:700;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + k + "</span>" + NR_LINE(ico) + "</div>" +
+          '<div style="font-size:44px;font-weight:800;color:#fff;margin-top:10px;line-height:1;white-space:nowrap;">' + v + "</div>" +
+          '<div style="font-size:14px;color:#9fc2ad;margin-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + s + "</div></div>";
       };
       var nrRecHtml = nrRecs.map(function (a) {
-        return '<div style="border-left:1px solid rgba(180,212,69,.45);padding:6px 0 6px 18px;">' +
+        return '<div style="border-left:1px solid rgba(180,212,69,.45);padding:6px 0 6px 14px;overflow:hidden;">' +
           '<div style="color:#B4D445;">' + NR_LINE(nrRecIcon(a.title)) + "</div>" +
-          '<div style="font-size:22px;font-weight:800;color:#fff;margin-top:12px;">' + a.title + "</div>" +
-          '<div style="font-size:18px;color:#9fc2ad;margin-top:6px;line-height:1.3;">' + (a.note || "") + "</div></div>";
+          '<div style="font-size:16px;font-weight:800;color:#fff;margin-top:10px;line-height:1.2;overflow:hidden;">' + a.title + "</div>" +
+          '<div style="font-size:14px;color:#9fc2ad;margin-top:6px;line-height:1.25;overflow:hidden;">' + (a.note || "") + "</div></div>";
       }).join("");
 
       wrap.innerHTML =
         '<div id="flyer-card" style="width:' + STORY_W + "px;height:" + STORY_H + "px;box-sizing:border-box;" +
         "font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;margin:0;padding:0;overflow:hidden;position:relative;" +
-        "background:#0b2e26;color:#e8f3ec;\">" +
+        "background:#0b2e26;color:#e8f3ec;text-transform:uppercase;letter-spacing:0.01em;line-height:1.25;\">" +
         '<div style="position:absolute;inset:0;overflow:hidden;">' + nrTiles + "</div>" +
         '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,31,26,.72) 0%,rgba(8,31,26,.42) 30%,rgba(8,31,26,.38) 55%,rgba(8,31,26,.75) 88%,rgba(8,31,26,.88) 100%);"></div>' +
         '<div style="position:absolute;left:64px;right:64px;top:0;bottom:0;">' +
@@ -13628,9 +13651,9 @@ var ReportKit = (function () {
         '<div style="position:absolute;top:196px;left:0;right:0;height:1px;background:linear-gradient(90deg,#B4D445,rgba(180,212,69,0));"></div>' +
         '<div style="position:absolute;top:236px;left:0;font-size:20px;letter-spacing:.28em;color:#B4D445;font-weight:700;text-transform:uppercase;">Observatorio climático · SIGP</div>' +
         '<div style="position:absolute;top:280px;left:0;right:0;white-space:nowrap;font-size:84px;line-height:.98;font-weight:800;color:#fff;">Reporte<br>climático diario</div>' +
-        '<div style="position:absolute;top:500px;left:0;right:0;display:flex;justify-content:space-between;align-items:baseline;">' +
-        '<div style="font-size:26px;color:#cfe3d6;">' + dateLong + "</div>" +
-        '<div style="font-size:26px;color:#B4D445;font-weight:700;letter-spacing:.04em;">' + String(place).toUpperCase() + "</div></div>" +
+        '<div style="position:absolute;top:500px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;gap:12px;">' +
+        '<div style="font-size:22px;color:#cfe3d6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;">' + dateLong + "</div>" +
+        '<div style="font-size:20px;color:#B4D445;font-weight:700;letter-spacing:.03em;white-space:nowrap;text-align:right;flex-shrink:0;">' + String(place).toUpperCase() + "</div></div>" +
 
         /* Pronóstico */
         '<div style="position:absolute;top:600px;left:0;right:0;height:290px;border:1px solid rgba(180,212,69,.35);border-radius:28px;background:rgba(8,31,26,.72);padding:42px 46px;display:flex;justify-content:space-between;">' +
@@ -13652,9 +13675,9 @@ var ReportKit = (function () {
         /* Horarios */
         '<div style="position:absolute;top:1160px;left:0;right:0;font-size:18px;letter-spacing:.24em;color:#B4D445;font-weight:700;">DESGLOSE POR HORARIO</div>' +
         '<div style="position:absolute;top:1208px;left:0;right:0;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;">' +
-        nrPer(NR_ICON.sunrise, "MAÑANA · 06–12", mCond, morning.tMin + "–" + morning.tMax + " °C", (morning.fMin != null ? morning.fMin + "–" + morning.fMax + "°" : "--"), morning.rainP) +
-        nrPer(NR_ICON.rain, "TARDE · 12–18", aCond, afternoon.tMin + "–" + afternoon.tMax + " °C", (afternoon.fMin != null ? afternoon.fMin + "–" + afternoon.fMax + "°" : "--"), afternoon.rainP) +
-        nrPer(NR_ICON.moon, "NOCHE · 18–06", nCond, night.tMin + "–" + night.tMax + " °C", (night.fMin != null ? night.fMin + "–" + night.fMax + "°" : "--"), night.rainP) + "</div>" +
+        nrPer(NR_ICON.sunrise, "MAÑANA 06–12", mCond, morning.tMin + "–" + morning.tMax + " °C", (morning.fMin != null ? morning.fMin + "–" + morning.fMax + "°" : "--"), morning.rainP) +
+        nrPer(NR_ICON.rain, "TARDE 12–18", aCond, afternoon.tMin + "–" + afternoon.tMax + " °C", (afternoon.fMin != null ? afternoon.fMin + "–" + afternoon.fMax + "°" : "--"), afternoon.rainP) +
+        nrPer(NR_ICON.moon, "NOCHE 18–06", nCond, night.tMin + "–" + night.tMax + " °C", (night.fMin != null ? night.fMin + "–" + night.fMax + "°" : "--"), night.rainP) + "</div>" +
 
         /* Recomendaciones */
         '<div style="position:absolute;top:1490px;left:0;right:0;font-size:18px;letter-spacing:.24em;color:#B4D445;font-weight:700;">RECOMENDACIONES</div>' +
@@ -13666,9 +13689,9 @@ var ReportKit = (function () {
         '<div style="font-size:22px;line-height:1.4;color:#e8f3ec;margin-top:8px;">' + resumen + "</div></div>" +
 
         /* Sol */
-        '<div style="position:absolute;top:1866px;left:0;right:0;display:flex;justify-content:space-between;font-size:22px;color:#cfe3d6;">' +
-        '<div>Amanecer <b style="color:#fff;margin-left:10px;">' + sunR + "</b></div>" +
-        '<div>Atardecer <b style="color:#fff;margin-left:10px;">' + sunS + "</b></div></div>" +
+        '<div style="position:absolute;top:1866px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;font-size:20px;color:#cfe3d6;white-space:nowrap;gap:16px;">' +
+        '<div style="white-space:nowrap;">Amanecer <b style="color:#fff;margin-left:8px;">' + sunR + "</b></div>" +
+        '<div style="white-space:nowrap;">Atardecer <b style="color:#fff;margin-left:8px;">' + sunS + "</b></div></div>" +
 
         "</div></div>";
 
