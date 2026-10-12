@@ -2112,13 +2112,13 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
       var x0 = cx - W / 2, y0 = cy - H / 2, t = "";
       for (var ty = Math.floor(y0 / 256); ty <= Math.floor((y0 + H) / 256); ty++) {
         for (var tx = Math.floor(x0 / 256); tx <= Math.floor((x0 + W) / 256); tx++) {
-          t += '<img crossorigin="anonymous" alt="" src="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/' +
+          t += '<img crossorigin="anonymous" alt="" src="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/' +
             Z + "/" + ty + "/" + tx + '" style="position:absolute;width:256px;height:256px;left:' +
             Math.round(tx * 256 - x0) + "px;top:" + Math.round(ty * 256 - y0) + 'px;"/>';
         }
       }
       return '<div style="position:absolute;inset:0;overflow:hidden;">' + t + '</div>' +
-        '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,31,26,.80) 0%,rgba(8,31,26,.50) 30%,rgba(8,31,26,.45) 55%,rgba(8,31,26,.82) 88%,rgba(8,31,26,.92) 100%);"></div>';
+        '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,31,26,.72) 0%,rgba(8,31,26,.42) 30%,rgba(8,31,26,.38) 55%,rgba(8,31,26,.75) 88%,rgba(8,31,26,.88) 100%);"></div>';
     }
   };
   (function () {
@@ -2169,32 +2169,73 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
     return mobile ? 1.25 : 2;
   }
 
-  function stripReportExternalMedia(root) {
+  function stripReportLogosOnly(root) {
     if (!root) return;
     var imgs = root.querySelectorAll("img");
     for (var i = 0; i < imgs.length; i++) {
       try {
         var img = imgs[i];
         var src = img.getAttribute("src") || "";
-        if (/^(https?:|file:|\/\/)/i.test(src) || /logo\d/i.test(src) || src.indexOf("tile/") >= 0) {
-          img.removeAttribute("src");
-          img.style.display = "none";
-          var box = img.closest("[id$='-logos'], #flyer-logos, #temperature-map-report-logos, #rain-map-report-logos");
-          if (box) box.style.display = "none";
-        }
+        var isLogo = /logo\d/i.test(src) || !!(img.closest && img.closest("[id$='-logos'], #flyer-logos, #temperature-map-report-logos, #rain-map-report-logos, #quake-flyer-logos"));
+        if (!isLogo) continue;
+        img.removeAttribute("src");
+        img.style.display = "none";
+        var box = img.closest("[id$='-logos'], #flyer-logos, #temperature-map-report-logos, #rain-map-report-logos, #quake-flyer-logos");
+        if (box) box.style.display = "none";
       } catch (e1) {}
     }
-    var tiles = root.querySelectorAll(".leaflet-container, .leaflet-tile-container img, .leaflet-container canvas");
-    for (var t = 0; t < tiles.length; t++) {
-      try { tiles[t].style.display = "none"; } catch (e2) {}
+  }
+
+  /* Compatibilidad: ya no borra el mapa de fondo; solo logos problemáticos. */
+  function stripReportExternalMedia(root) {
+    stripReportLogosOnly(root);
+  }
+
+  function stripReportMapTiles(root) {
+    if (!root) return;
+    var imgs = root.querySelectorAll("img");
+    for (var i = 0; i < imgs.length; i++) {
+      try {
+        var img = imgs[i];
+        var src = img.getAttribute("src") || "";
+        if (src.indexOf("tile/") >= 0 || /arcgisonline|openstreetmap|tile\.openstreetmap/i.test(src)) {
+          img.removeAttribute("src");
+          img.style.display = "none";
+        }
+      } catch (e2) {}
     }
+  }
+
+  function waitReportImages(root, timeoutMs) {
+    timeoutMs = timeoutMs || 6000;
+    if (!root) return Promise.resolve();
+    var imgs = root.querySelectorAll("img");
+    var pending = [];
+    for (var i = 0; i < imgs.length; i++) {
+      (function (img) {
+        if (!img.getAttribute("src")) return;
+        if (img.complete && img.naturalWidth > 0) return;
+        pending.push(new Promise(function (resolve) {
+          var done = function () {
+            img.removeEventListener("load", done);
+            img.removeEventListener("error", done);
+            resolve();
+          };
+          img.addEventListener("load", done, { once: true });
+          img.addEventListener("error", done, { once: true });
+          setTimeout(done, timeoutMs);
+        }));
+      })(imgs[i]);
+    }
+    return Promise.all(pending);
   }
 
   function captureReportNode(card, scale) {
     if (!card || typeof html2canvas !== "function") {
       return Promise.reject(new Error("No se puede capturar el reporte."));
     }
-    stripReportExternalMedia(card);
+    /* Conserva el mapa de calles de fondo; solo quita logos locales que taintan. */
+    stripReportLogosOnly(card);
     var w = Math.max(card.offsetWidth || 0, card.clientWidth || 0, 1080);
     var h = Math.max(card.offsetHeight || 0, card.clientHeight || 0, card.scrollHeight || 0, 1920);
     var opts = {
@@ -2203,78 +2244,74 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
       useCORS: true,
       allowTaint: false,
       logging: false,
-      imageTimeout: 8000,
+      imageTimeout: 12000,
       foreignObjectRendering: false,
       width: w,
       height: h,
       windowWidth: w,
       windowHeight: h
     };
-    return html2canvas(card, opts).catch(function () {
-      stripReportExternalMedia(card);
-      opts.allowTaint = true;
-      opts.useCORS = false;
-      opts.scale = Math.min(opts.scale, 1.25);
-      return html2canvas(card, opts);
+    return html2canvas(card, opts).catch(function (err1) {
+      console.warn("Captura con mapa CORS falló, reintento:", err1);
+      /* Segundo intento: permite taint solo si el navegador aún exporta; si no, se quitará el mapa en el export. */
+      var opts2 = {
+        backgroundColor: "#0b2e26",
+        scale: Math.min(scale || 1.5, 1.5),
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+        imageTimeout: 8000,
+        foreignObjectRendering: false,
+        width: w,
+        height: h,
+        windowWidth: w,
+        windowHeight: h
+      };
+      stripReportLogosOnly(card);
+      return html2canvas(card, opts2);
     });
   }
 
   function triggerBlobDownload(blob, filename) {
     if (!blob) return Promise.reject(new Error("Archivo vacío."));
     filename = filename || "reporte";
-
-    /* 1) Compartir nativo en teléfono (iOS/Android): más fiable que <a download>. */
-    try {
-      if (typeof navigator.share === "function" && typeof File !== "undefined") {
-        var file = new File([blob], filename, { type: blob.type || "application/octet-stream" });
-        var payload = { files: [file], title: filename };
-        if (!navigator.canShare || navigator.canShare(payload)) {
-          return navigator.share(payload).then(function () { return true; }).catch(function (err) {
-            /* Usuario canceló o no soporta files: sigue a descarga clásica. */
-            if (err && (err.name === "AbortError" || /abort/i.test(String(err.message || "")))) {
-              return false;
-            }
-            return fallbackDownload(blob, filename);
-          });
-        }
-      }
-    } catch (eShare) {}
-
-    return fallbackDownload(blob, filename);
+    /* Descarga directa inmediata. Sin menú Compartir. */
+    return directDownload(blob, filename);
   }
 
-  function fallbackDownload(blob, filename) {
+  function directDownload(blob, filename) {
     var url = URL.createObjectURL(blob);
-    var mobile = isMobileDevice();
     var isiOS = /iPad|iPhone|iPod/i.test(navigator.userAgent || "") ||
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
-    /* iOS: el atributo download casi no funciona; abrir el blob permite guardar. */
-    if (isiOS) {
-      var opened = null;
-      try { opened = window.open(url, "_blank"); } catch (eOpen) { opened = null; }
-      if (!opened) {
-        /* Último recurso: mostrar visor flotante con el archivo. */
-        showMobileSaveHelper(url, filename, blob.type);
-      } else {
-        window.setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e) {} }, 120000);
-      }
-      return Promise.resolve(true);
-    }
-
     var link = document.createElement("a");
     link.href = url;
+    link.setAttribute("download", filename);
     link.download = filename;
     link.rel = "noopener";
+    link.type = blob.type || "application/octet-stream";
     link.style.display = "none";
     document.body.appendChild(link);
+
     try {
       link.click();
     } catch (eClick) {
-      try { window.open(url, "_blank"); } catch (e2) {}
+      try {
+        var evt = document.createEvent("MouseEvents");
+        evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+        link.dispatchEvent(evt);
+      } catch (eEvt) {}
     }
     try { link.remove(); } catch (eRem) {}
-    window.setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e3) {} }, 60000);
+
+    /* iOS: fuerza abrir el archivo para guardarlo desde el visor del sistema. */
+    if (isiOS) {
+      try { window.location.href = url; } catch (eLoc) {}
+      window.setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e1) {} }, 120000);
+      return Promise.resolve(true);
+    }
+
+    window.setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e2) {} }, 60000);
     return Promise.resolve(true);
   }
 
@@ -2350,8 +2387,13 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
       var pageHeight = Math.round(pageWidth * ratio * 100) / 100;
       var doc = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: [pageWidth, pageHeight], compress: true });
       doc.addImage(jpeg, "JPEG", 0, 0, pageWidth, pageHeight);
-      var pdfBlob = doc.output("blob");
-      return triggerBlobDownload(pdfBlob, fileBase + ".pdf");
+      try {
+        doc.save(fileBase + ".pdf");
+        return Promise.resolve(true);
+      } catch (eSave) {
+        var pdfBlob = doc.output("blob");
+        return triggerBlobDownload(pdfBlob, fileBase + ".pdf");
+      }
     } catch (ePdf) {
       return Promise.reject(ePdf);
     }
@@ -13078,7 +13120,7 @@ var ReportKit = (function () {
       var nrTiles = "";
       for (var nrTy = Math.floor(nrY0 / 256); nrTy <= Math.floor((nrY0 + STORY_H) / 256); nrTy++) {
         for (var nrTx = Math.floor(nrX0 / 256); nrTx <= Math.floor((nrX0 + STORY_W) / 256); nrTx++) {
-          nrTiles += '<img crossorigin="anonymous" alt="" src="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/' +
+          nrTiles += '<img crossorigin="anonymous" alt="" src="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/' +
             NR_Z + "/" + nrTy + "/" + nrTx + '" style="position:absolute;width:256px;height:256px;left:' +
             Math.round(nrTx * 256 - nrX0) + "px;top:" + Math.round(nrTy * 256 - nrY0) + 'px;"/>';
         }
@@ -13113,7 +13155,7 @@ var ReportKit = (function () {
         "font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;margin:0;padding:0;overflow:hidden;position:relative;" +
         "background:#0b2e26;color:#e8f3ec;\">" +
         '<div style="position:absolute;inset:0;overflow:hidden;">' + nrTiles + "</div>" +
-        '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,31,26,.80) 0%,rgba(8,31,26,.50) 30%,rgba(8,31,26,.45) 55%,rgba(8,31,26,.82) 88%,rgba(8,31,26,.92) 100%);"></div>' +
+        '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,31,26,.72) 0%,rgba(8,31,26,.42) 30%,rgba(8,31,26,.38) 55%,rgba(8,31,26,.75) 88%,rgba(8,31,26,.88) 100%);"></div>' +
         '<div style="position:absolute;left:64px;right:64px;top:0;bottom:0;">' +
 
         /* Logos */
@@ -13240,14 +13282,16 @@ var ReportKit = (function () {
           var mensaje = String(errorExport && errorExport.message || "");
           var errorSeguridad = !!(errorExport && errorExport.name === "SecurityError") || /taint|origin|security/i.test(mensaje);
           if (errorSeguridad && card) {
-            stripReportExternalMedia(card);
+            /* Solo si el mapa tainta el canvas se quita como último recurso. */
+            stripReportLogosOnly(card);
+            stripReportMapTiles(card);
             var logosBox = card.querySelector("#flyer-logos");
             if (logosBox && logosBox.parentNode) logosBox.parentNode.removeChild(logosBox);
             return capturar().then(function (c2) { return exportar(c2); });
           }
           if (captureScale > 1) {
             captureScale = Math.max(1, captureScale - 0.25);
-            stripReportExternalMedia(card);
+            stripReportLogosOnly(card);
             return capturar().then(exportarConRespaldo);
           }
           throw errorExport;
@@ -13255,10 +13299,12 @@ var ReportKit = (function () {
       }
 
       waitImages(card).then(function () {
-        return new Promise(function (r) { setTimeout(r, 120); });
+        return waitReportImages(card, 7000);
+      }).then(function () {
+        return new Promise(function (r) { setTimeout(r, 250); });
       }).then(function () {
         ajustarAlto();
-        stripReportExternalMedia(card);
+        stripReportLogosOnly(card);
         return capturar();
       }).then(function (canvas) {
         return exportarConRespaldo(canvas);
