@@ -11240,7 +11240,14 @@ var ReportKit = (function () {
         return Promise.all(waits);
       }
       function capturar() {
-        return html2canvas(card, { backgroundColor: null, scale: captureScale, useCORS: true, allowTaint: false, logging: false });
+        return html2canvas(card, { backgroundColor: null, scale: captureScale, useCORS: true, allowTaint: false, logging: false }).catch(function (e) {
+          if (captureScale > 1) {
+            captureScale = captureScale > 2 ? 2 : (captureScale > 1.5 ? 1.5 : 1);
+            console.warn("Reintento de captura con escala " + captureScale, e);
+            return capturar();
+          }
+          throw e;
+        });
       }
       function exportar(canvas) {
         if (outputFormat === "png") {
@@ -11960,7 +11967,14 @@ var ReportKit = (function () {
         return Promise.all(waits);
       }
       function capture() {
-        return html2canvas(card, { backgroundColor: null, scale: captureScale, useCORS: true, allowTaint: false, logging: false });
+        return html2canvas(card, { backgroundColor: null, scale: captureScale, useCORS: true, allowTaint: false, logging: false }).catch(function (e) {
+          if (captureScale > 1) {
+            captureScale = captureScale > 2 ? 2 : (captureScale > 1.5 ? 1.5 : 1);
+            console.warn("Reintento de captura con escala " + captureScale, e);
+            return capture();
+          }
+          throw e;
+        });
       }
       function exportReport(canvas) {
         if (outputFormat === "png") {
@@ -12382,6 +12396,13 @@ var ReportKit = (function () {
       function capture() {
         return html2canvas(card, {
           backgroundColor: null, scale: captureScale, useCORS: true, allowTaint: false, logging: false
+        }).catch(function (e) {
+          if (captureScale > 1) {
+            captureScale = captureScale > 2 ? 2 : (captureScale > 1.5 ? 1.5 : 1);
+            console.warn("Reintento de captura con escala " + captureScale, e);
+            return capture();
+          }
+          throw e;
         });
       }
       function exportReport(canvas) {
@@ -13073,6 +13094,13 @@ var ReportKit = (function () {
           useCORS: true,
           allowTaint: false,
           logging: false
+        }).catch(function (e) {
+          if (captureScale > 1) {
+            captureScale = captureScale > 2 ? 2 : (captureScale > 1.5 ? 1.5 : 1);
+            console.warn("Reintento de captura con escala " + captureScale, e);
+            return capturar();
+          }
+          throw e;
         });
       }
 
