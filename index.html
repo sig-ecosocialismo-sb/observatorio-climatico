@@ -2319,10 +2319,19 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
     } catch (eSan) {}
   }
 
-  /* En móvil: quitar fondo de mapa, svg decorativos y canvas; CONSERVAR logos del repo. */
+  /* Logos del repo + fondo de mapa si cargó bien (naturalWidth > 0). */
   function isReportLogoSrc(src) {
     src = String(src || "");
     return /logo1\.png|logo2\.png|logo1\.png\.png|logo2\.png\.png/i.test(src);
+  }
+  function isReportMapBgSrc(src) {
+    src = String(src || "");
+    return /report-map-bg/i.test(src);
+  }
+  function imgLoadedOk(img) {
+    try {
+      return !!(img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0);
+    } catch (e) { return false; }
   }
   function prepareReportForMobileCapture(root) {
     if (!root) return;
@@ -2332,12 +2341,28 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
         try {
           var img = imgs[i];
           var src = img.getAttribute("src") || img.currentSrc || "";
-          /* Conservar logos institucionales del repositorio. */
+          /* Conservar logos institucionales. */
           if (isReportLogoSrc(src)) {
             img.style.display = "block";
             continue;
           }
-          /* Quitar fondo de mapa y cualquier otra imagen (evita createPattern 0x0). */
+          /* Conservar fondo de mapa SOLO si ya cargó con tamaño real. */
+          if (isReportMapBgSrc(src)) {
+            if (imgLoadedOk(img)) {
+              img.style.display = "block";
+              continue;
+            }
+            /* No cargó: quitar para no romper createPattern. */
+            img.removeAttribute("src");
+            img.removeAttribute("srcset");
+            img.style.display = "none";
+            img.setAttribute("data-report-zero-size", "1");
+            if (img.parentNode && img.parentNode.style) {
+              img.parentNode.style.background = "#0b2e26";
+            }
+            continue;
+          }
+          /* Otras imágenes: quitar en móvil. */
           img.removeAttribute("src");
           img.removeAttribute("srcset");
           img.style.display = "none";
@@ -2361,7 +2386,6 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
           cvs[c].setAttribute("data-report-zero-size", "1");
         } catch (eC) {}
       }
-      /* Asegurar que la caja de logos se vea. */
       var logoBoxes = root.querySelectorAll("#flyer-logos, #temperature-map-report-logos, #rain-map-report-logos, #quake-flyer-logos, [id$='-logos']");
       for (var lb = 0; lb < logoBoxes.length; lb++) {
         try {
@@ -2374,15 +2398,7 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
           }
         } catch (eL) {}
       }
-      var all = root.querySelectorAll("*");
-      for (var a = 0; a < all.length; a++) {
-        try {
-          var el = all[a];
-          if (el.style && el.style.backgroundImage && el.style.backgroundImage !== "none") {
-            el.style.backgroundImage = "none";
-          }
-        } catch (eBg) {}
-      }
+      /* No tocar backgroundImage CSS del fondo degradado de respaldo. */
     } catch (ePrep) {}
   }
 
@@ -2433,9 +2449,14 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
         for (var i = 0; i < kill.length; i++) {
           try {
             var tagK = String(kill[i].tagName || "").toLowerCase();
-            if (tagK === "img" && isReportLogoSrc(kill[i].getAttribute("src") || "")) {
+            var srcK = kill[i].getAttribute("src") || "";
+            if (tagK === "img" && isReportLogoSrc(srcK)) {
               kill[i].style.display = "block";
-              continue; /* conservar logos */
+              continue;
+            }
+            if (tagK === "img" && isReportMapBgSrc(srcK) && imgLoadedOk(kill[i])) {
+              kill[i].style.display = "block";
+              continue;
             }
             kill[i].style.display = "none";
             if (tagK === "img") {
@@ -2458,9 +2479,11 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
         var tag = String(el.tagName).toLowerCase();
         if (tag === "img") {
           var src = el.getAttribute("src") || "";
-          if (isReportLogoSrc(src)) return false; /* no ignorar logos */
+          if (isReportLogoSrc(src)) return false;
+          if (isReportMapBgSrc(src) && imgLoadedOk(el)) return false;
           if (el.getAttribute("data-report-zero-size") === "1") return true;
-          if (mobile && !isReportLogoSrc(src)) return true;
+          if (isReportMapBgSrc(src) && !imgLoadedOk(el)) return true;
+          if (mobile && !isReportLogoSrc(src) && !isReportMapBgSrc(src)) return true;
           if (el.complete && (el.naturalWidth === 0 || el.naturalHeight === 0)) return true;
         }
         if (tag === "svg" || tag === "canvas" || tag === "video" || tag === "iframe") {
@@ -13690,8 +13713,8 @@ var ReportKit = (function () {
 
       Promise.resolve().then(function () {
         if (isMobileDevice()) {
-          /* Móvil: solo esperar logos del repo (máx 3s), no el fondo de mapa. */
-          return waitReportImages(card, 3000);
+          /* Móvil: esperar logos + fondo de mapa (máx 4s). */
+          return waitReportImages(card, 4000);
         }
         return waitImages(card).then(function () {
           return waitReportImages(card, 5000);
@@ -13708,7 +13731,8 @@ var ReportKit = (function () {
           for (var bi = 0; bi < bgFail.length; bi++) {
             var im = bgFail[bi];
             var src = im.getAttribute("src") || "";
-            if (/report-map-bg/i.test(src) && (isMobileDevice() || (im.complete && (!im.naturalWidth || !im.naturalHeight)))) {
+            /* Solo quitar fondo de mapa si NO cargó (evita createPattern 0x0). */
+            if (/report-map-bg/i.test(src) && im.complete && (!im.naturalWidth || !im.naturalHeight)) {
               im.removeAttribute("src");
               im.style.display = "none";
               if (im.parentNode && im.parentNode.style) im.parentNode.style.background = "#0b2e26";
