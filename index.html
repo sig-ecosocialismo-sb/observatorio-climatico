@@ -2171,13 +2171,17 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
 
   function stripReportLogosOnly(root) {
     if (!root) return;
+    /* Los logos en data:image se conservan siempre.
+       Solo se omiten archivos logo1/logo2 en file:// que tainan el canvas. */
+    if (location.protocol !== "file:") return;
     var imgs = root.querySelectorAll("img");
     for (var i = 0; i < imgs.length; i++) {
       try {
         var img = imgs[i];
         var src = img.getAttribute("src") || "";
-        var isLogo = /logo\d/i.test(src) || !!(img.closest && img.closest("[id$='-logos'], #flyer-logos, #temperature-map-report-logos, #rain-map-report-logos, #quake-flyer-logos"));
-        if (!isLogo) continue;
+        if (/^data:image\//i.test(src)) continue;
+        var isLogoFile = /logo\d/i.test(src) || /logo1|logo2/i.test(src);
+        if (!isLogoFile) continue;
         img.removeAttribute("src");
         img.style.display = "none";
         var box = img.closest("[id$='-logos'], #flyer-logos, #temperature-map-report-logos, #rain-map-report-logos, #quake-flyer-logos");
@@ -2186,7 +2190,7 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
     }
   }
 
-  /* Compatibilidad: ya no borra el mapa de fondo; solo logos problemáticos. */
+  /* Compatibilidad: no borra el mapa de fondo. */
   function stripReportExternalMedia(root) {
     stripReportLogosOnly(root);
   }
@@ -2280,6 +2284,16 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
   }
 
   function directDownload(blob, filename) {
+    if (!blob) return Promise.reject(new Error("Archivo vacío"));
+    filename = filename || "reporte";
+
+    try {
+      if (window.navigator && typeof window.navigator.msSaveOrOpenBlob === "function") {
+        window.navigator.msSaveOrOpenBlob(blob, filename);
+        return Promise.resolve(true);
+      }
+    } catch (eMs) {}
+
     var url = URL.createObjectURL(blob);
     var isiOS = /iPad|iPhone|iPod/i.test(navigator.userAgent || "") ||
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -2290,28 +2304,23 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
     link.download = filename;
     link.rel = "noopener";
     link.type = blob.type || "application/octet-stream";
-    link.style.display = "none";
+    link.style.cssText = "display:none;position:fixed;left:-9999px;top:0;";
     document.body.appendChild(link);
 
     try {
-      link.click();
-    } catch (eClick) {
-      try {
-        var evt = document.createEvent("MouseEvents");
-        evt.initMouseEvent("click", true, true, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-        link.dispatchEvent(evt);
-      } catch (eEvt) {}
+      link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
+    } catch (e1) {
+      try { link.click(); } catch (e2) {}
     }
     try { link.remove(); } catch (eRem) {}
 
-    /* iOS: fuerza abrir el archivo para guardarlo desde el visor del sistema. */
     if (isiOS) {
       try { window.location.href = url; } catch (eLoc) {}
-      window.setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e1) {} }, 120000);
+      window.setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e3) {} }, 120000);
       return Promise.resolve(true);
     }
 
-    window.setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e2) {} }, 60000);
+    window.setTimeout(function () { try { URL.revokeObjectURL(url); } catch (e5) {} }, 60000);
     return Promise.resolve(true);
   }
 
@@ -2388,11 +2397,16 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
       var doc = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: [pageWidth, pageHeight], compress: true });
       doc.addImage(jpeg, "JPEG", 0, 0, pageWidth, pageHeight);
       try {
-        doc.save(fileBase + ".pdf");
-        return Promise.resolve(true);
-      } catch (eSave) {
         var pdfBlob = doc.output("blob");
+        try { doc.save(fileBase + ".pdf"); } catch (eSave) {}
         return triggerBlobDownload(pdfBlob, fileBase + ".pdf");
+      } catch (eOut) {
+        try {
+          doc.save(fileBase + ".pdf");
+          return Promise.resolve(true);
+        } catch (eSave2) {
+          return Promise.reject(eOut);
+        }
       }
     } catch (ePdf) {
       return Promise.reject(ePdf);
@@ -11317,8 +11331,8 @@ var ReportKit = (function () {
           '<div style="padding:230px 48px 40px;position:relative;box-sizing:border-box;">' +
             '<div style="display:inline-block;color:#B4D445;font-size:18px;font-weight:800;letter-spacing:.32em;">SIGP · OBSERVATORIO CLIMÁTICO</div>' +
             '<div id="quake-flyer-logos" style="display:none;position:absolute;left:48px;right:48px;top:34px;height:130px;align-items:center;justify-content:space-between;gap:10px;z-index:2;">' +
-              '<div style="margin-left:-30px;position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img src="' + REPORT_LOGO_LEFT_SRC + '" alt="Logo institucional izquierdo" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
-              '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img src="' + REPORT_LOGO_RIGHT_SRC + '" alt="Logo institucional derecho" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+              '<div style="margin-left:-30px;position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img src="' + REPORT_LOGO_LEFT_SRC + '" alt="Logo institucional izquierdo" style="display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+              '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img src="' + REPORT_LOGO_RIGHT_SRC + '" alt="Logo institucional derecho" style="display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
             '</div>' +
             '<div style="position:absolute;top:196px;left:64px;right:64px;height:1px;background:linear-gradient(90deg,#B4D445,rgba(180,212,69,0));"></div>' +
               '<div style="margin-top:28px;max-width:70%;position:relative;z-index:1;">' +
@@ -12134,8 +12148,8 @@ var ReportKit = (function () {
           : "VALORES POR ZONA · COLORES SEGÚN LA ESCALA DEL VISUALIZADOR SIGP";
         var logos =
           '<div id="temperature-map-report-logos" style="display:none;position:absolute;left:48px;right:48px;top:34px;height:130px;align-items:center;justify-content:space-between;gap:10px;z-index:2;">' +
-            '<div style="margin-left:-30px;position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img src="' + REPORT_LOGO_LEFT_SRC + '" alt="Logo institucional izquierdo" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
-            '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img src="' + REPORT_LOGO_RIGHT_SRC + '" alt="Logo institucional derecho" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+            '<div style="margin-left:-30px;position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img src="' + REPORT_LOGO_LEFT_SRC + '" alt="Logo institucional izquierdo" style="display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+            '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img src="' + REPORT_LOGO_RIGHT_SRC + '" alt="Logo institucional derecho" style="display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
           '</div>';
         wrap.innerHTML =
           '<div id="temperature-map-report-card" style="width:' + STORY_W + 'px;height:' + STORY_H + 'px;box-sizing:border-box;font-family:\'Segoe UI\',system-ui,-apple-system,sans-serif;margin:0;padding:0;background:#0b2e26;position:relative;overflow:hidden;color:#ffffff;position:relative;">' +
@@ -13159,12 +13173,12 @@ var ReportKit = (function () {
         '<div style="position:absolute;left:64px;right:64px;top:0;bottom:0;">' +
 
         /* Logos */
-        '<div id="flyer-logos" style="display:none;position:absolute;left:-16px;right:-16px;top:34px;height:130px;align-items:center;justify-content:space-between;z-index:2;">' +
+        '<div id="flyer-logos" style="display:flex;position:absolute;left:-16px;right:-16px;top:34px;height:130px;align-items:center;justify-content:space-between;z-index:2;">' +
         '<div style="position:relative;margin-left:-30px;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
-        '<img src="' + REPORT_LOGO_LEFT_SRC + '" alt="Logo institucional izquierdo" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" ' +
+        '<img src="' + REPORT_LOGO_LEFT_SRC + '" alt="Logo institucional izquierdo" style="display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" ' +
         "onload=\"this.style.display='block';this.parentNode.parentNode.style.display='flex';\" onerror=\"this.style.display='none';this.parentNode.style.display='none';\" /></div>" +
         '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
-        '<img src="' + REPORT_LOGO_RIGHT_SRC + '" alt="Logo institucional derecho" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" ' +
+        '<img src="' + REPORT_LOGO_RIGHT_SRC + '" alt="Logo institucional derecho" style="display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" ' +
         "onload=\"this.style.display='block';this.parentNode.parentNode.style.display='flex';\" onerror=\"this.style.display='none';this.parentNode.style.display='none';\" /></div></div>" +
 
         /* Título */
@@ -13217,6 +13231,16 @@ var ReportKit = (function () {
 
       document.body.appendChild(wrap);
       var card = document.getElementById("flyer-card");
+      try {
+        var logosBox = document.getElementById("flyer-logos");
+        if (logosBox) {
+          logosBox.style.display = "flex";
+          var logoImgs = logosBox.querySelectorAll("img");
+          for (var li = 0; li < logoImgs.length; li++) {
+            if (logoImgs[li].getAttribute("src")) logoImgs[li].style.display = "block";
+          }
+        }
+      } catch (eLogosShow) {}
 
       /* ===== RED DE SEGURIDAD: el reporte NUNCA recorta lo de abajo =====
          La tarjeta mide 1080x1920 con overflow:hidden. Si algún día el texto
