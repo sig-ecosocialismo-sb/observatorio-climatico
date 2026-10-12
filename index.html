@@ -2160,6 +2160,22 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
     return mobile ? 1 : 2;
   }
 
+  function reportErrorDetails(error) {
+    var name = "", message = "";
+    try { name = error && error.name ? String(error.name) : ""; } catch (eName) {}
+    try {
+      message = error && error.message ? String(error.message) : String(error || "");
+    } catch (eMessage) {}
+    message = message.replace(/\s+/g, " ").trim();
+    if (!message || message === "undefined" || message === "[object Object]") {
+      try {
+        message = error && error.stack ? String(error.stack).split("\n")[0] : "sin detalle del navegador";
+      } catch (eStack) { message = "sin detalle del navegador"; }
+    }
+    var detail = name && message.indexOf(name) !== 0 ? name + ": " + message : message;
+    return detail.slice(0, 150);
+  }
+
   function stripReportLogosOnly(root) {
     if (!root) return;
     /* Los logos en data:image se conservan siempre.
@@ -11280,13 +11296,13 @@ var ReportKit = (function () {
       document.getElementById("loading").style.display = v ? "flex" : "none";
     },
 
-    showError: function (msg) {
+    showError: function (msg, duration) {
       var el = document.getElementById("error-toast");
       el.textContent = msg || "ERROR";
       el.style.display = "block";
       setTimeout(function () {
         el.style.display = "none";
-      }, 4200);
+      }, Number(duration) || 4200);
     },
 
     /* Reporte sísmico para el evento seleccionado en el mapa. */
@@ -11713,7 +11729,8 @@ var ReportKit = (function () {
         .then(exportarConRespaldo)
         .catch(function (errorReporte) {
           console.error(errorReporte);
-          self.showError(outputFormat === "png" ? "NO SE PUDO GENERAR EL PNG SÍSMICO. INTENTA DE NUEVO." : "NO SE PUDO GENERAR EL PDF SÍSMICO. INTENTA DE NUEVO.");
+          var reportMessage = outputFormat === "png" ? "NO SE PUDO GENERAR EL PNG SÍSMICO." : "NO SE PUDO GENERAR EL PDF SÍSMICO.";
+          self.showError(reportMessage + " DETALLE: " + reportErrorDetails(errorReporte), 15000);
         })
         .finally(function () {
           self.showLoad(false);
@@ -12430,7 +12447,7 @@ var ReportKit = (function () {
         return capture();
       }).then(exportWithFallback).catch(function (error) {
         console.error("Reporte visual de temperatura:", error);
-        self.showError("NO SE PUDO GENERAR EL REPORTE DE TEMPERATURA. REVISA TU CONEXIÓN E INTENTA DE NUEVO.");
+        self.showError("NO SE PUDO GENERAR EL REPORTE DE TEMPERATURA. DETALLE: " + reportErrorDetails(error), 15000);
       }).finally(function () {
         self.showLoad(false);
         try { if (reportMap) reportMap.remove(); } catch (eMapRemove) {}
@@ -12822,7 +12839,7 @@ var ReportKit = (function () {
         return capture();
       }).then(exportWithFallback).catch(function (error) {
         console.error("Reporte visual de lluvia:", error);
-        self.showError("NO SE PUDO GENERAR EL REPORTE DE LLUVIA. REVISA TU CONEXIÓN E INTENTA DE NUEVO.");
+        self.showError("NO SE PUDO GENERAR EL REPORTE DE LLUVIA. DETALLE: " + reportErrorDetails(error), 15000);
       }).finally(function () {
         self.showLoad(false);
         try { if (reportMap) reportMap.remove(); } catch (eMapRemove) {}
@@ -13501,17 +13518,17 @@ var ReportKit = (function () {
       }).catch(function (err) {
         console.error("Error reporte diario:", err);
         var msg = String(err && (err.message || err) || "");
+        var userMessage;
         if (typeof html2canvas !== "function") {
-          self.showError("FALTA LA LIBRERÍA DE CAPTURA. REVISA TU CONEXIÓN.");
+          userMessage = "FALTA LA LIBRERÍA DE CAPTURA.";
         } else if (outputFormat === "pdf" && !(window.jspdf && window.jspdf.jsPDF)) {
-          self.showError("FALTA LA LIBRERÍA PDF. REVISA TU CONEXIÓN.");
+          userMessage = "FALTA LA LIBRERÍA PDF.";
         } else if (/taint|SecurityError|origin/i.test(msg)) {
-          self.showError("EL NAVEGADOR BLOQUEÓ LA IMAGEN DEL REPORTE. SUBE report-map-bg.jpg JUNTO AL INDEX.");
+          userMessage = "EL NAVEGADOR BLOQUEÓ UNA IMAGEN DEL REPORTE.";
         } else {
-          self.showError(outputFormat === "png"
-            ? "NO SE PUDO GENERAR EL PNG. INTENTA DE NUEVO."
-            : "NO SE PUDO GENERAR EL PDF. INTENTA DE NUEVO.");
+          userMessage = outputFormat === "png" ? "NO SE PUDO GENERAR EL PNG." : "NO SE PUDO GENERAR EL PDF.";
         }
+        self.showError(userMessage + " DETALLE: " + reportErrorDetails(err), 15000);
       }).finally(function () {
         self.showLoad(false);
         try { document.body.removeChild(wrap); } catch (eR) {}
@@ -13529,5 +13546,5 @@ var ReportKit = (function () {
   });
 })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a498cb578edc7429',t:'MTc5MTgzNjMxMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a498db93e834b773',t:'MTc5MTgzNjk3Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a498cb578edc7429',t:'MTc5MTgzNjMxMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a498db93e834b773',t:'MTc5MTgzNjk3Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4990f00ed93c717',t:'MTc5MTgzOTA4Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
