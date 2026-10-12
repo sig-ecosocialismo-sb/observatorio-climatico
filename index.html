@@ -2104,20 +2104,11 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
 
   /* Diseño común de reportes (mismo estilo que el reporte diario): mapa de calles de fondo + velo oscuro. */
   window.NRDesign = {
+    /* Fondo local (sube report-map-bg.jpg junto al index en GitHub). Sin red externa. */
     bg: function () {
-      var W = 1080, H = 1920, Z = 12, LAT = 10.14, LON = -64.66;
-      var cx = (LON + 180) / 360 * 256 * Math.pow(2, Z);
-      var lr = LAT * Math.PI / 180;
-      var cy = (1 - Math.log(Math.tan(lr) + 1 / Math.cos(lr)) / Math.PI) / 2 * 256 * Math.pow(2, Z);
-      var x0 = cx - W / 2, y0 = cy - H / 2, t = "";
-      for (var ty = Math.floor(y0 / 256); ty <= Math.floor((y0 + H) / 256); ty++) {
-        for (var tx = Math.floor(x0 / 256); tx <= Math.floor((x0 + W) / 256); tx++) {
-          t += '<img crossorigin="anonymous" alt="" src="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/' +
-            Z + "/" + ty + "/" + tx + '" style="position:absolute;width:256px;height:256px;left:' +
-            Math.round(tx * 256 - x0) + "px;top:" + Math.round(ty * 256 - y0) + 'px;"/>';
-        }
-      }
-      return '<div style="position:absolute;inset:0;overflow:hidden;">' + t + '</div>' +
+      return '<div style="position:absolute;inset:0;overflow:hidden;background:#0b2e26;">' +
+        '<img src="report-map-bg.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;"/>' +
+        '</div>' +
         '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,31,26,.72) 0%,rgba(8,31,26,.42) 30%,rgba(8,31,26,.38) 55%,rgba(8,31,26,.75) 88%,rgba(8,31,26,.88) 100%);"></div>';
     }
   };
@@ -13125,20 +13116,8 @@ var ReportKit = (function () {
         if (/hidrat|agua|bebe/i.test(t)) return NR_ICON.bottle;
         return NR_ICON.clock;
       }
-      /* Mosaico de tiles de calles (Esri, con CORS) centrado en el municipio */
-      var NR_LAT = 10.14, NR_LON = -64.66, NR_Z = 12;
-      var nrCx = (NR_LON + 180) / 360 * 256 * Math.pow(2, NR_Z);
-      var nrLr = NR_LAT * Math.PI / 180;
-      var nrCy = (1 - Math.log(Math.tan(nrLr) + 1 / Math.cos(nrLr)) / Math.PI) / 2 * 256 * Math.pow(2, NR_Z);
-      var nrX0 = nrCx - STORY_W / 2, nrY0 = nrCy - STORY_H / 2;
-      var nrTiles = "";
-      for (var nrTy = Math.floor(nrY0 / 256); nrTy <= Math.floor((nrY0 + STORY_H) / 256); nrTy++) {
-        for (var nrTx = Math.floor(nrX0 / 256); nrTx <= Math.floor((nrX0 + STORY_W) / 256); nrTx++) {
-          nrTiles += '<img crossorigin="anonymous" alt="" src="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/' +
-            NR_Z + "/" + nrTy + "/" + nrTx + '" style="position:absolute;width:256px;height:256px;left:' +
-            Math.round(nrTx * 256 - nrX0) + "px;top:" + Math.round(nrTy * 256 - nrY0) + 'px;"/>';
-        }
-      }
+      /* Fondo local del municipio (archivo report-map-bg.jpg junto al index). */
+      var nrTiles = '<img src="report-map-bg.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;"/>'
       var nrRain = Math.max(Number(morning.rainP) || 0, Number(afternoon.rainP) || 0, Number(night.rainP) || 0);
       var nrUv = "--";
       var nrRecs = (plan.advisories || []).slice(0, 4);
