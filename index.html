@@ -2104,10 +2104,10 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
 
   /* Diseño común de reportes (mismo estilo que el reporte diario): mapa de calles de fondo + velo oscuro. */
   window.NRDesign = {
-    /* Fondo sólido siempre; report-map-bg.jpg es opcional (si no está en GitHub no rompe la captura). */
+    /* Fondo: degradado + imagen opcional (se rellena con dataURL al generar el reporte). */
     bg: function () {
       return '<div style="position:absolute;inset:0;overflow:hidden;background:linear-gradient(160deg,#0b2e26 0%,#135242 45%,#0d3d32 100%);">' +
-        '<img src="report-map-bg.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display=\'none\';this.removeAttribute(\'src\');"/>' +
+        '<img data-report-asset="bg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;"/>' +
         '</div>' +
         '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,31,26,.72) 0%,rgba(8,31,26,.42) 30%,rgba(8,31,26,.38) 55%,rgba(8,31,26,.75) 88%,rgba(8,31,26,.88) 100%);"></div>';
     }
@@ -2286,6 +2286,56 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
   }
 
   /* Elimina imágenes/canvas con tamaño 0 (causa createPattern InvalidStateError). */
+  /* Precarga un asset del mismo sitio y lo convierte a dataURL (fiable con html2canvas). */
+  function loadReportAssetDataURL(url, timeoutMs) {
+    timeoutMs = timeoutMs || 5000;
+    return new Promise(function (resolve) {
+      var done = false;
+      var finish = function (val) {
+        if (done) return;
+        done = true;
+        resolve(val || null);
+      };
+      setTimeout(function () { finish(null); }, timeoutMs);
+      try {
+        var img = new Image();
+        /* Mismo origen en GitHub Pages: sin crossOrigin evita rarezas en algunos Android. */
+        img.onload = function () {
+          try {
+            if (!img.naturalWidth || !img.naturalHeight) { finish(null); return; }
+            var c = document.createElement("canvas");
+            c.width = img.naturalWidth;
+            c.height = img.naturalHeight;
+            var ctx = c.getContext("2d");
+            ctx.drawImage(img, 0, 0);
+            finish(c.toDataURL("image/png"));
+          } catch (eDraw) {
+            finish(null);
+          }
+        };
+        img.onerror = function () { finish(null); };
+        img.src = url;
+      } catch (e) { finish(null); }
+    });
+  }
+
+  function loadReportLogosAndBg() {
+    var logoL = ["logo1.png.png", "logo1.png"];
+    var logoR = ["logo2.png.png", "logo2.png"];
+    var bg = ["report-map-bg.png", "report-map-bg.jpg"];
+    function firstOk(list) {
+      return list.reduce(function (chain, url) {
+        return chain.then(function (prev) {
+          if (prev) return prev;
+          return loadReportAssetDataURL(url, 4500);
+        });
+      }, Promise.resolve(null));
+    }
+    return Promise.all([firstOk(logoL), firstOk(logoR), firstOk(bg)]).then(function (arr) {
+      return { left: arr[0], right: arr[1], bg: arr[2] };
+    });
+  }
+
   function sanitizeReportZeroSizeMedia(root) {
     if (!root) return;
     try {
@@ -2341,18 +2391,16 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
         try {
           var img = imgs[i];
           var src = img.getAttribute("src") || img.currentSrc || "";
-          /* Conservar logos institucionales. */
-          if (isReportLogoSrc(src)) {
+          /* Conservar logos y fondo ya embebidos como dataURL o archivos del repo cargados. */
+          if (isReportLogoSrc(src) || /^data:image\//i.test(src) && img.getAttribute("data-report-asset") === "logo") {
             img.style.display = "block";
             continue;
           }
-          /* Conservar fondo de mapa SOLO si ya cargó con tamaño real. */
-          if (isReportMapBgSrc(src)) {
-            if (imgLoadedOk(img)) {
+          if (isReportMapBgSrc(src) || (img.getAttribute("data-report-asset") === "bg")) {
+            if (imgLoadedOk(img) || /^data:image\//i.test(src)) {
               img.style.display = "block";
               continue;
             }
-            /* No cargó: quitar para no romper createPattern. */
             img.removeAttribute("src");
             img.removeAttribute("srcset");
             img.style.display = "none";
@@ -2360,6 +2408,11 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
             if (img.parentNode && img.parentNode.style) {
               img.parentNode.style.background = "#0b2e26";
             }
+            continue;
+          }
+          if (/^data:image\//i.test(src) && imgLoadedOk(img)) {
+            /* dataURL válido (logo/fondo precargado). */
+            img.style.display = "block";
             continue;
           }
           /* Otras imágenes: quitar en móvil. */
@@ -2450,7 +2503,8 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
           try {
             var tagK = String(kill[i].tagName || "").toLowerCase();
             var srcK = kill[i].getAttribute("src") || "";
-            if (tagK === "img" && isReportLogoSrc(srcK)) {
+            var assetK = kill[i].getAttribute("data-report-asset") || "";
+            if (tagK === "img" && (isReportLogoSrc(srcK) || assetK === "logo" || assetK === "bg" || (/^data:image\//i.test(srcK) && imgLoadedOk(kill[i])))) {
               kill[i].style.display = "block";
               continue;
             }
@@ -2479,11 +2533,13 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
         var tag = String(el.tagName).toLowerCase();
         if (tag === "img") {
           var src = el.getAttribute("src") || "";
-          if (isReportLogoSrc(src)) return false;
+          var asset = el.getAttribute("data-report-asset") || "";
+          if (isReportLogoSrc(src) || asset === "logo" || asset === "bg") return false;
           if (isReportMapBgSrc(src) && imgLoadedOk(el)) return false;
+          if (/^data:image\//i.test(src) && imgLoadedOk(el)) return false;
           if (el.getAttribute("data-report-zero-size") === "1") return true;
           if (isReportMapBgSrc(src) && !imgLoadedOk(el)) return true;
-          if (mobile && !isReportLogoSrc(src) && !isReportMapBgSrc(src)) return true;
+          if (mobile && !isReportLogoSrc(src) && !isReportMapBgSrc(src) && !/^data:image\//i.test(src)) return true;
           if (el.complete && (el.naturalWidth === 0 || el.naturalHeight === 0)) return true;
         }
         if (tag === "svg" || tag === "canvas" || tag === "video" || tag === "iframe") {
@@ -13527,7 +13583,7 @@ var ReportKit = (function () {
       }
       /* Fondo: color sólido + imagen opcional (si report-map-bg.jpg no está en el repo no rompe la captura). */
       var nrTiles = '<div style="position:absolute;inset:0;width:100%;height:100%;background:linear-gradient(160deg,#0b2e26 0%,#135242 45%,#0d3d32 100%);"></div>' +
-        '<img src="report-map-bg.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display=\'none\';this.removeAttribute(\'src\');"/>'
+        '<img data-report-asset="bg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;"/>'
       var nrRain = Math.max(Number(morning.rainP) || 0, Number(afternoon.rainP) || 0, Number(night.rainP) || 0);
       var nrUv = "--";
       var nrRecs = (plan.advisories || []).slice(0, 4);
@@ -13564,11 +13620,9 @@ var ReportKit = (function () {
         /* Logos */
         '<div id="flyer-logos" style="display:flex;position:absolute;left:-16px;right:-16px;top:34px;height:130px;align-items:center;justify-content:space-between;z-index:2;">' +
         '<div style="position:relative;margin-left:-30px;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
-        '<img src="' + REPORT_LOGO_LEFT_SRC + '" alt="Logo institucional izquierdo" style="display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" ' +
-        "onload=\"this.style.display='block';this.parentNode.parentNode.style.display='flex';\" onerror=\"this.style.display='none';this.parentNode.style.display='none';\" /></div>" +
+        '<img data-report-asset="logo" alt="Logo institucional izquierdo" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" /></div>' +
         '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
-        '<img src="' + REPORT_LOGO_RIGHT_SRC + '" alt="Logo institucional derecho" style="display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" ' +
-        "onload=\"this.style.display='block';this.parentNode.parentNode.style.display='flex';\" onerror=\"this.style.display='none';this.parentNode.style.display='none';\" /></div></div>" +
+        '<img data-report-asset="logo" alt="Logo institucional derecho" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" /></div></div>' +
 
         /* Título */
         '<div style="position:absolute;top:196px;left:0;right:0;height:1px;background:linear-gradient(90deg,#B4D445,rgba(180,212,69,0));"></div>' +
@@ -13711,16 +13765,28 @@ var ReportKit = (function () {
         });
       }
 
-      Promise.resolve().then(function () {
-        if (isMobileDevice()) {
-          /* Móvil: esperar logos + fondo de mapa (máx 4s). */
-          return waitReportImages(card, 4000);
-        }
-        return waitImages(card).then(function () {
-          return waitReportImages(card, 5000);
-        }).then(function () {
-          return new Promise(function (r) { setTimeout(r, 200); });
-        });
+      loadReportLogosAndBg().then(function (assets) {
+        try {
+          var logoImgs = card.querySelectorAll('img[data-report-asset="logo"]');
+          if (logoImgs[0] && assets.left) {
+            logoImgs[0].src = assets.left;
+            logoImgs[0].style.display = "block";
+          }
+          if (logoImgs[1] && assets.right) {
+            logoImgs[1].src = assets.right;
+            logoImgs[1].style.display = "block";
+          }
+          var bgImg = card.querySelector('img[data-report-asset="bg"]');
+          if (bgImg && assets.bg) {
+            bgImg.src = assets.bg;
+            bgImg.style.display = "block";
+          }
+          var logosBox = card.querySelector("#flyer-logos");
+          if (logosBox && (assets.left || assets.right)) logosBox.style.display = "flex";
+        } catch (eAssets) { console.warn("Assets reporte:", eAssets); }
+        return waitReportImages(card, isMobileDevice() ? 2500 : 5000);
+      }).then(function () {
+        return new Promise(function (r) { setTimeout(r, 150); });
       }).then(function () {
         ajustarAlto();
         stripReportLogosOnly(card);
