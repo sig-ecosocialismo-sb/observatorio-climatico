@@ -2107,7 +2107,7 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
     /* Fondo sólido siempre; report-map-bg.jpg es opcional (si no está en GitHub no rompe la captura). */
     bg: function () {
       return '<div style="position:absolute;inset:0;overflow:hidden;background:linear-gradient(160deg,#0b2e26 0%,#135242 45%,#0d3d32 100%);">' +
-        '<img src="report-map-bg.jpg" alt="" crossorigin="anonymous" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display=\'none\';this.removeAttribute(\'src\');"/>' +
+        '<img src="report-map-bg.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display=\'none\';this.removeAttribute(\'src\');"/>' +
         '</div>' +
         '<div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,31,26,.72) 0%,rgba(8,31,26,.42) 30%,rgba(8,31,26,.38) 55%,rgba(8,31,26,.75) 88%,rgba(8,31,26,.88) 100%);"></div>';
     }
@@ -2156,8 +2156,10 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
 
   function reportCaptureScale(outputFormat) {
     var mobile = isMobileDevice();
-    if (String(outputFormat).toLowerCase() === "png") return mobile ? 1.25 : 2;
-    return mobile ? 1 : 2;
+    /* En móvil siempre 1: evita createPattern / memoria en Android e iOS. */
+    if (mobile) return 1;
+    if (String(outputFormat).toLowerCase() === "png") return 2;
+    return 2;
   }
 
   function reportErrorDetails(error) {
@@ -2292,7 +2294,8 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
         var img = imgs[i];
         var broken = false;
         try {
-          if (img.complete && (img.naturalWidth === 0 || img.naturalHeight === 0)) broken = true;
+          if (!img.getAttribute("src") && !img.getAttribute("srcset")) broken = true;
+          else if (img.complete && (img.naturalWidth === 0 || img.naturalHeight === 0)) broken = true;
         } catch (e0) { broken = true; }
         if (broken) {
           try {
@@ -2316,74 +2319,112 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
     } catch (eSan) {}
   }
 
+  /* En móvil: captura “limpia” — sin img/svg/canvas (evita createPattern 0x0). */
+  function prepareReportForMobileCapture(root) {
+    if (!root) return;
+    try {
+      var imgs = root.querySelectorAll("img");
+      for (var i = 0; i < imgs.length; i++) {
+        try {
+          var img = imgs[i];
+          img.removeAttribute("src");
+          img.removeAttribute("srcset");
+          img.style.display = "none";
+          img.setAttribute("data-report-zero-size", "1");
+          if (img.parentNode && img.parentNode.style) {
+            img.parentNode.style.background = img.parentNode.style.background || "#0b2e26";
+          }
+        } catch (eD) {}
+      }
+      var svgs = root.querySelectorAll("svg");
+      for (var s = 0; s < svgs.length; s++) {
+        try {
+          svgs[s].style.display = "none";
+          svgs[s].setAttribute("data-report-zero-size", "1");
+        } catch (eS) {}
+      }
+      var cvs = root.querySelectorAll("canvas");
+      for (var c = 0; c < cvs.length; c++) {
+        try {
+          cvs[c].style.display = "none";
+          cvs[c].setAttribute("data-report-zero-size", "1");
+        } catch (eC) {}
+      }
+      var logoBoxes = root.querySelectorAll("#flyer-logos, #temperature-map-report-logos, #rain-map-report-logos, #quake-flyer-logos, [id$='-logos']");
+      for (var lb = 0; lb < logoBoxes.length; lb++) {
+        try { logoBoxes[lb].style.display = "none"; } catch (eL) {}
+      }
+      /* Fondos que usan url(...) pueden generar createPattern con canvas vacío. */
+      var all = root.querySelectorAll("*");
+      for (var a = 0; a < all.length; a++) {
+        try {
+          var el = all[a];
+          if (el.style && el.style.backgroundImage && el.style.backgroundImage !== "none") {
+            el.style.backgroundImage = "none";
+          }
+        } catch (eBg) {}
+      }
+    } catch (ePrep) {}
+  }
+
   function captureReportNode(card, scale) {
     if (!card || typeof html2canvas !== "function") {
       return Promise.reject(new Error("html2canvas no disponible"));
     }
     var mobile = isMobileDevice();
-    scale = mobile ? 1 : (scale || 1.5);
+    scale = mobile ? 1 : Math.min(Number(scale) || 1.5, 2);
 
-    /* Sacar la tarjeta al viewport real: fuera de pantalla falla en muchos móviles. */
     var host = card.parentNode;
-    var prevHost = host ? {
-      css: host.getAttribute("style") || "",
-      parent: host.parentNode
-    } : null;
+    var prevHost = host ? { css: host.getAttribute("style") || "" } : null;
+
     try {
       if (host && host.style) {
-        host.style.cssText = "position:fixed;left:0;top:0;width:" + (card.offsetWidth || 1080) + "px;opacity:0.01;z-index:2147483000;pointer-events:none;overflow:visible;";
+        /* Móvil: visible (opacity 1). El overlay de carga tapa el flash. */
+        host.style.cssText = "position:fixed;left:0;top:0;width:" + (card.offsetWidth || 1080) +
+          "px;opacity:1;z-index:2147483000;pointer-events:none;overflow:visible;" +
+          "transform:none;-webkit-transform:none;";
+        if (!mobile) {
+          host.style.opacity = "0.01";
+        }
       }
       card.style.transform = "none";
+      card.style.webkitTransform = "none";
       card.style.opacity = "1";
       card.style.visibility = "visible";
     } catch (ePos) {}
 
     stripReportLogosOnly(card);
     sanitizeReportZeroSizeMedia(card);
+    /* En móvil limpiar ANTES del primer intento (no esperar a que falle 40s). */
+    if (mobile) prepareReportForMobileCapture(card);
 
     var w = Math.max(card.scrollWidth || 0, card.offsetWidth || 0, card.clientWidth || 0, 1080);
     var h = Math.max(card.scrollHeight || 0, card.offsetHeight || 0, card.clientHeight || 0, 1920);
     if (!w || w < 1) w = 1080;
     if (!h || h < 1) h = 1920;
+    if (mobile && h > 2200) h = 2200;
 
     function onCloneSanitize(clonedDoc, clonedEl) {
       try {
         var root = clonedEl || (clonedDoc && clonedDoc.body);
         if (!root) return;
+        if (mobile) prepareReportForMobileCapture(root);
         sanitizeReportZeroSizeMedia(root);
-        /* Quitar canvas/img rotos en el clon (html2canvas createPattern). */
-        var imgs = root.querySelectorAll("img");
-        for (var i = 0; i < imgs.length; i++) {
-          var img = imgs[i];
-          var src = img.getAttribute("src") || "";
-          var bad = !src || img.getAttribute("data-report-zero-size") === "1" ||
-            img.getAttribute("data-report-media-removed") === "true";
+        var kill = root.querySelectorAll("img, svg, canvas, video, iframe");
+        for (var i = 0; i < kill.length; i++) {
           try {
-            if (!bad && img.complete && (img.naturalWidth === 0 || img.naturalHeight === 0)) bad = true;
-          } catch (eN) { bad = true; }
-          if (bad) {
-            try {
-              img.removeAttribute("src");
-              img.removeAttribute("srcset");
-              img.style.display = "none";
-              if (img.parentNode) {
-                /* Fondo sólido si era el mapa de fondo del reporte. */
-                var p = img.parentNode;
-                if (p && p.style && (!p.style.background || p.style.background.indexOf("url") >= 0)) {
-                  p.style.background = "#0b2e26";
-                }
-              }
-            } catch (eRm) {}
-          }
-        }
-        var cvs = root.querySelectorAll("canvas");
-        for (var j = 0; j < cvs.length; j++) {
-          try {
-            if (!cvs[j].width || !cvs[j].height) {
-              cvs[j].style.display = "none";
+            kill[i].style.display = "none";
+            if (kill[i].tagName && String(kill[i].tagName).toLowerCase() === "img") {
+              kill[i].removeAttribute("src");
+              kill[i].removeAttribute("srcset");
             }
-          } catch (eC) {}
+          } catch (eK) {}
         }
+        try {
+          root.style.opacity = "1";
+          root.style.visibility = "visible";
+          root.style.transform = "none";
+        } catch (eOp) {}
       } catch (eClone) {}
     }
 
@@ -2391,12 +2432,12 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
       try {
         if (!el || !el.tagName) return false;
         var tag = String(el.tagName).toLowerCase();
-        if (tag === "img") {
+        if (tag === "img" || tag === "svg" || tag === "canvas" || tag === "video" || tag === "iframe") {
+          if (mobile) return true;
           if (el.getAttribute("data-report-zero-size") === "1") return true;
-          if (el.getAttribute("data-report-media-removed") === "true") return true;
-          if (el.complete && (el.naturalWidth === 0 || el.naturalHeight === 0)) return true;
+          if (tag === "img" && el.complete && (el.naturalWidth === 0 || el.naturalHeight === 0)) return true;
+          if (tag === "canvas" && (!el.width || !el.height)) return true;
         }
-        if (tag === "canvas" && (!el.width || !el.height)) return true;
       } catch (eIgn) {}
       return false;
     }
@@ -2410,62 +2451,16 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
       });
     }
 
-    var baseOpts = {
-      backgroundColor: "#0b2e26",
-      scale: scale,
-      useCORS: true,
-      allowTaint: false,
-      logging: false,
-      imageTimeout: mobile ? 4000 : 10000,
-      foreignObjectRendering: false,
-      removeContainer: true,
-      width: w,
-      height: h,
-      windowWidth: w,
-      windowHeight: h,
-      scrollX: 0,
-      scrollY: 0,
-      x: 0,
-      y: 0,
-      onclone: onCloneSanitize,
-      ignoreElements: ignoreBroken
-    };
-
-    return run(baseOpts).catch(function (err1) {
-      console.warn("Captura 1 falló; se preparan recursos seguros para el canvas.", err1);
-      /* En GitHub Pages las teselas externas / fondos faltantes pueden impedir PNG/PDF. */
-      stripReportExternalMedia(card);
-      sanitizeReportZeroSizeMedia(card);
-      var opts2 = {};
-      for (var k in baseOpts) opts2[k] = baseOpts[k];
-      opts2.scale = 1;
-      opts2.imageTimeout = 2500;
-      opts2.onclone = onCloneSanitize;
-      opts2.ignoreElements = ignoreBroken;
-      return run(opts2);
-    }).catch(function (err2) {
-      console.warn("Captura 2 falló; se reintenta sin imágenes externas.", err2);
-      stripReportExternalMedia(card);
-      sanitizeReportZeroSizeMedia(card);
-      /* Quitar explícitamente fondos de mapa que no existen en el repo. */
-      try {
-        var bgImgs = card.querySelectorAll('img[src*="report-map-bg"], img[src$="report-map-bg.jpg"]');
-        for (var bi = 0; bi < bgImgs.length; bi++) {
-          bgImgs[bi].removeAttribute("src");
-          bgImgs[bi].style.display = "none";
-          if (bgImgs[bi].parentNode && bgImgs[bi].parentNode.style) {
-            bgImgs[bi].parentNode.style.background = "#0b2e26";
-          }
-        }
-      } catch (eBg) {}
-      var opts3 = {
+    function buildOpts(sc, timeout, extra) {
+      var o = {
         backgroundColor: "#0b2e26",
-        scale: 1,
+        scale: sc,
         useCORS: true,
         allowTaint: false,
         logging: false,
-        imageTimeout: 1000,
+        imageTimeout: timeout,
         foreignObjectRendering: false,
+        removeContainer: true,
         width: w,
         height: h,
         windowWidth: w,
@@ -2477,12 +2472,53 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
         onclone: onCloneSanitize,
         ignoreElements: ignoreBroken
       };
-      return run(opts3);
-    }).finally(function () {
+      if (extra) {
+        for (var k in extra) o[k] = extra[k];
+      }
+      return o;
+    }
+
+    function restoreHost() {
       try {
         if (host && prevHost) host.setAttribute("style", prevHost.css);
       } catch (eRest) {}
-    });
+    }
+
+    function afterLayout(ms) {
+      return new Promise(function (resolve) {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            setTimeout(resolve, ms || (mobile ? 80 : 40));
+          });
+        });
+      });
+    }
+
+    return afterLayout().then(function () {
+      w = Math.max(card.scrollWidth || 0, card.offsetWidth || 0, card.clientWidth || 0, 1080);
+      h = Math.max(card.scrollHeight || 0, card.offsetHeight || 0, card.clientHeight || 0, 1920);
+      if (!w || w < 1) w = 1080;
+      if (!h || h < 1) h = 1920;
+      if (mobile && h > 2200) h = 2200;
+      /* Primer intento: móvil ya sin img/svg. */
+      return run(buildOpts(scale, mobile ? 800 : 8000));
+    }).catch(function (err1) {
+      console.warn("Captura 1 falló.", err1);
+      stripReportExternalMedia(card);
+      prepareReportForMobileCapture(card);
+      sanitizeReportZeroSizeMedia(card);
+      return afterLayout(50).then(function () {
+        return run(buildOpts(1, 500, { allowTaint: true }));
+      });
+    }).catch(function (err2) {
+      console.warn("Captura 2 falló.", err2);
+      prepareReportForMobileCapture(card);
+      return run(buildOpts(1, 300, {
+        allowTaint: true,
+        foreignObjectRendering: true,
+        imageTimeout: 200
+      }));
+    }).finally(restoreHost);
   }
 
   function triggerBlobDownload(blob, filename) {
@@ -13435,7 +13471,7 @@ var ReportKit = (function () {
       }
       /* Fondo: color sólido + imagen opcional (si report-map-bg.jpg no está en el repo no rompe la captura). */
       var nrTiles = '<div style="position:absolute;inset:0;width:100%;height:100%;background:linear-gradient(160deg,#0b2e26 0%,#135242 45%,#0d3d32 100%);"></div>' +
-        '<img src="report-map-bg.jpg" alt="" crossorigin="anonymous" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display=\'none\';this.removeAttribute(\'src\');"/>'
+        '<img src="report-map-bg.jpg" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display=\'none\';this.removeAttribute(\'src\');"/>'
       var nrRain = Math.max(Number(morning.rainP) || 0, Number(afternoon.rainP) || 0, Number(night.rainP) || 0);
       var nrUv = "--";
       var nrRecs = (plan.advisories || []).slice(0, 4);
@@ -13624,21 +13660,27 @@ var ReportKit = (function () {
         });
       }
 
-      waitImages(card).then(function () {
-        return waitReportImages(card, 7000);
-      }).then(function () {
-        return new Promise(function (r) { setTimeout(r, 250); });
+      Promise.resolve().then(function () {
+        if (isMobileDevice()) {
+          /* Móvil: no esperar imágenes (se eliminan); evita 40s colgado. */
+          return Promise.resolve();
+        }
+        return waitImages(card).then(function () {
+          return waitReportImages(card, 5000);
+        }).then(function () {
+          return new Promise(function (r) { setTimeout(r, 200); });
+        });
       }).then(function () {
         ajustarAlto();
         stripReportLogosOnly(card);
         sanitizeReportZeroSizeMedia(card);
-        /* Si el fondo de mapa no cargó (común en GitHub Pages), no debe romper createPattern. */
+        if (isMobileDevice()) prepareReportForMobileCapture(card);
         try {
           var bgFail = card.querySelectorAll("img");
           for (var bi = 0; bi < bgFail.length; bi++) {
             var im = bgFail[bi];
             var src = im.getAttribute("src") || "";
-            if (/report-map-bg/i.test(src) && im.complete && (!im.naturalWidth || !im.naturalHeight)) {
+            if (/report-map-bg/i.test(src) && (isMobileDevice() || (im.complete && (!im.naturalWidth || !im.naturalHeight)))) {
               im.removeAttribute("src");
               im.style.display = "none";
               if (im.parentNode && im.parentNode.style) im.parentNode.style.background = "#0b2e26";
