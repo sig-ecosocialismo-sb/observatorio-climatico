@@ -2336,6 +2336,54 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
     });
   }
 
+  /* Misma capa base del mapa del sitio (Esri World Street Map). */
+  var REPORT_SITE_BASEMAP = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
+  var REPORT_SITE_BASEMAP_ATTR = "© ESRI · DATOS OSM Y OTROS";
+
+  /* Aplica logos (y fondo opcional) a cualquier tarjeta de reporte. */
+  function applyReportAssetsToCard(card, opts) {
+    opts = opts || {};
+    return loadReportLogosAndBg().then(function (assets) {
+      if (!card) return assets;
+      try {
+        var logoImgs = card.querySelectorAll('img[data-report-asset="logo"]');
+        if (!logoImgs.length) {
+          /* Compatibilidad: imágenes dentro de contenedores *-logos */
+          var boxes = card.querySelectorAll("#flyer-logos, #temperature-map-report-logos, #rain-map-report-logos, #quake-flyer-logos, [id$='-logos']");
+          for (var b = 0; b < boxes.length; b++) {
+            var imgs = boxes[b].querySelectorAll("img");
+            for (var ii = 0; ii < imgs.length; ii++) {
+              imgs[ii].setAttribute("data-report-asset", "logo");
+            }
+          }
+          logoImgs = card.querySelectorAll('img[data-report-asset="logo"]');
+        }
+        if (logoImgs[0] && assets.left) {
+          logoImgs[0].src = assets.left;
+          logoImgs[0].style.display = "block";
+        }
+        if (logoImgs[1] && assets.right) {
+          logoImgs[1].src = assets.right;
+          logoImgs[1].style.display = "block";
+        }
+        var logoBoxes = card.querySelectorAll("#flyer-logos, #temperature-map-report-logos, #rain-map-report-logos, #quake-flyer-logos, [id$='-logos']");
+        for (var lb = 0; lb < logoBoxes.length; lb++) {
+          if (assets.left || assets.right) {
+            logoBoxes[lb].style.display = "flex";
+          }
+        }
+        if (opts.includeBg !== false) {
+          var bgImg = card.querySelector('img[data-report-asset="bg"]');
+          if (bgImg && assets.bg) {
+            bgImg.src = assets.bg;
+            bgImg.style.display = "block";
+          }
+        }
+      } catch (eA) { console.warn("applyReportAssetsToCard", eA); }
+      return assets;
+    });
+  }
+
   function sanitizeReportZeroSizeMedia(root) {
     if (!root) return;
     try {
@@ -5872,7 +5920,7 @@ var ReportKit = (function () {
         });
         /* Capas base: calles y satélite (Esri, sin API key) */
         this.baseStreet = L.tileLayer(
-          "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+          REPORT_SITE_BASEMAP,
           { attribution: "&copy; ESRI &mdash; DATOS OSM Y OTROS", maxZoom: 19 }
         );
         this.baseSat = L.tileLayer(
@@ -11806,9 +11854,9 @@ var ReportKit = (function () {
           NRDesign.bg() +
           '<div style="padding:230px 48px 40px;position:relative;box-sizing:border-box;">' +
             '<div style="display:inline-block;color:#B4D445;font-size:18px;font-weight:800;letter-spacing:.32em;">SIGP · OBSERVATORIO CLIMÁTICO</div>' +
-            '<div id="quake-flyer-logos" style="display:none;position:absolute;left:48px;right:48px;top:34px;height:130px;align-items:center;justify-content:space-between;gap:10px;z-index:2;">' +
-              '<div style="margin-left:-30px;position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img src="' + REPORT_LOGO_LEFT_SRC + '" alt="Logo institucional izquierdo" style="display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
-              '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img src="' + REPORT_LOGO_RIGHT_SRC + '" alt="Logo institucional derecho" style="display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+            '<div id="quake-flyer-logos" style="display:flex;position:absolute;left:48px;right:48px;top:34px;height:130px;align-items:center;justify-content:space-between;gap:10px;z-index:2;">' +
+              '<div style="margin-left:-30px;position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="Logo institucional izquierdo" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+              '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="Logo institucional derecho" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
             '</div>' +
             '<div style="position:absolute;top:196px;left:64px;right:64px;height:1px;background:linear-gradient(90deg,#B4D445,rgba(180,212,69,0));"></div>' +
               '<div style="margin-top:28px;max-width:70%;position:relative;z-index:1;">' +
@@ -11941,7 +11989,7 @@ var ReportKit = (function () {
               resolve(ok);
             }
             quakeReportTiles = L.tileLayer(
-              "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+              REPORT_SITE_BASEMAP,
               { maxZoom: 19, crossOrigin: true, attribution: "© ESRI · DATOS OSM Y OTROS" }
             );
             quakeReportTiles.once("load", function () { finish(true); });
@@ -12010,7 +12058,9 @@ var ReportKit = (function () {
           throw errorExport;
         });
       }
-      prepararMapaReporte().then(function () { return esperarImagenes(card); })
+      prepararMapaReporte()
+        .then(function () { return applyReportAssetsToCard(card, { includeBg: false }); })
+        .then(function () { return esperarImagenes(card); })
         .then(function () { return new Promise(function (resolve) { setTimeout(resolve, 120); }); })
         .then(function () { ajustarAlto(); return capturar(); })
         .then(exportarConRespaldo)
@@ -12592,7 +12642,7 @@ var ReportKit = (function () {
               resolve(ok);
             }
             var tiles = L.tileLayer(
-              "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+              REPORT_SITE_BASEMAP,
               { maxZoom: 19, crossOrigin: true, attribution: "© ESRI · DATOS OSM Y OTROS" }
             );
             tiles.on("tileload", function () { successfulTiles++; });
@@ -12625,9 +12675,9 @@ var ReportKit = (function () {
           ? "T° · TEMPERATURA ACTUAL   ·   ST · SENSACIÓN TÉRMICA"
           : "VALORES POR ZONA · COLORES SEGÚN LA ESCALA DEL VISUALIZADOR SIGP";
         var logos =
-          '<div id="temperature-map-report-logos" style="display:none;position:absolute;left:48px;right:48px;top:34px;height:130px;align-items:center;justify-content:space-between;gap:10px;z-index:2;">' +
-            '<div style="margin-left:-30px;position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img src="' + REPORT_LOGO_LEFT_SRC + '" alt="Logo institucional izquierdo" style="display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
-            '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img src="' + REPORT_LOGO_RIGHT_SRC + '" alt="Logo institucional derecho" style="display:block;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+          '<div id="temperature-map-report-logos" style="display:flex;position:absolute;left:48px;right:48px;top:34px;height:130px;align-items:center;justify-content:space-between;gap:10px;z-index:2;">' +
+            '<div style="margin-left:-30px;position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="Logo institucional izquierdo" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+            '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="Logo institucional derecho" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
           '</div>';
         wrap.innerHTML =
           '<div id="temperature-map-report-card" style="width:' + STORY_W + 'px;height:' + STORY_H + 'px;box-sizing:border-box;font-family:\'Segoe UI\',system-ui,-apple-system,sans-serif;margin:0;padding:0;background:#0b2e26;position:relative;overflow:hidden;color:#ffffff;position:relative;">' +
@@ -12726,6 +12776,8 @@ var ReportKit = (function () {
         }
         buildReport(mapMarkup);
         return prepareTemperatureReportMap(data).then(function () {
+          return applyReportAssetsToCard(card, { includeBg: false });
+        }).then(function () {
           return waitImages(card);
         }).then(function () {
           return new Promise(function (resolve) { setTimeout(resolve, 120); });
@@ -12940,9 +12992,9 @@ var ReportKit = (function () {
 
       function buildReport(data) {
         var logos =
-          '<div id="rain-map-report-logos" style="display:none;position:absolute;left:48px;right:48px;top:34px;height:130px;align-items:center;justify-content:space-between;gap:10px;z-index:2;">' +
-            '<div style="margin-left:-30px;position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img src="' + REPORT_LOGO_LEFT_SRC + '" alt="" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
-            '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img src="' + REPORT_LOGO_RIGHT_SRC + '" alt="" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+          '<div id="rain-map-report-logos" style="display:flex;position:absolute;left:48px;right:48px;top:34px;height:130px;align-items:center;justify-content:space-between;gap:10px;z-index:2;">' +
+            '<div style="margin-left:-30px;position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+            '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
           '</div>';
         var legend =
           '<div style="margin:14px 4px 0;">' +
@@ -13030,7 +13082,7 @@ var ReportKit = (function () {
                   resolve(ok);
                 }
                 var base = L.tileLayer(
-                  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
+                  REPORT_SITE_BASEMAP,
                   { maxZoom: 19, crossOrigin: true, attribution: "© ESRI · DATOS OSM Y OTROS" }
                 );
                 base.on("tileload", function () { successfulTiles++; });
@@ -13119,6 +13171,8 @@ var ReportKit = (function () {
       loadRainData().then(function (data) {
         buildReport(data);
         return prepareRainReportMap(data).then(function () {
+          return applyReportAssetsToCard(card, { includeBg: false });
+        }).then(function () {
           return waitImages(card);
         }).then(function () {
           return new Promise(function (resolve) { setTimeout(resolve, 140); });
@@ -13789,25 +13843,7 @@ var ReportKit = (function () {
         });
       }
 
-      loadReportLogosAndBg().then(function (assets) {
-        try {
-          var logoImgs = card.querySelectorAll('img[data-report-asset="logo"]');
-          if (logoImgs[0] && assets.left) {
-            logoImgs[0].src = assets.left;
-            logoImgs[0].style.display = "block";
-          }
-          if (logoImgs[1] && assets.right) {
-            logoImgs[1].src = assets.right;
-            logoImgs[1].style.display = "block";
-          }
-          var bgImg = card.querySelector('img[data-report-asset="bg"]');
-          if (bgImg && assets.bg) {
-            bgImg.src = assets.bg;
-            bgImg.style.display = "block";
-          }
-          var logosBox = card.querySelector("#flyer-logos");
-          if (logosBox && (assets.left || assets.right)) logosBox.style.display = "flex";
-        } catch (eAssets) { console.warn("Assets reporte:", eAssets); }
+      applyReportAssetsToCard(card, { includeBg: true }).then(function () {
         return waitReportImages(card, isMobileDevice() ? 2500 : 5000);
       }).then(function () {
         return new Promise(function (r) { setTimeout(r, 150); });
