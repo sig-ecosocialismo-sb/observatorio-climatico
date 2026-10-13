@@ -12256,6 +12256,28 @@ var ReportKit = (function () {
         }
         return null;
       }
+      function findShapeByName(name) {
+        for (var i = 0; i < QUAKE_REPORT_MAP_SHAPES.length; i++) {
+          if (QUAKE_REPORT_MAP_SHAPES[i].name === name) return QUAKE_REPORT_MAP_SHAPES[i];
+        }
+        return null;
+      }
+      /* Guayana Esequiba (Esequibo): contorno a partir de la forma de Guyana del atlas del reporte. */
+      function getEsequiboRings() {
+        var gy = findShapeByName("Guyana");
+        return (gy && gy.polygons) ? gy.polygons : [];
+      }
+      function getVenezuelaRings() {
+        var ve = findVenezuelaShape();
+        return (ve && ve.polygons) ? ve.polygons : [];
+      }
+      function pointInAnyRing(lon, lat, rings) {
+        if (!rings) return false;
+        for (var i = 0; i < rings.length; i++) {
+          if (pointInRing(lon, lat, rings[i])) return true;
+        }
+        return false;
+      }
       function loadVenezuelaTemperatures() {
         var shape = findVenezuelaShape();
         if (!shape || !shape.polygons || !shape.polygons.length) return Promise.reject(new Error("No está disponible el contorno de Venezuela."));
@@ -12482,11 +12504,14 @@ var ReportKit = (function () {
         var northY = mercatorY(bounds.maxLat), southY = mercatorY(bounds.minLat);
         var spanLon = bounds.maxLon - bounds.minLon;
         var samples = data.samples || [], sigma2 = 2 * 175 * 175;
+        /* Solo colorear dentro de Venezuela + Guayana Esequiba (Esequibo). */
+        var maskRings = getVenezuelaRings().concat(getEsequiboRings());
         for (var py = 0; py < height; py++) {
           var mercY = northY - (py + 0.5) / height * (northY - southY);
           var lat = latitudeFromMercatorY(mercY);
           for (var px = 0; px < width; px++) {
             var lon = bounds.minLon + (px + 0.5) / width * spanLon;
+            if (maskRings.length && !pointInAnyRing(lon, lat, maskRings)) continue;
             var weighted = 0, totalWeight = 0;
             for (var i = 0; i < samples.length; i++) {
               var dLat = (lat - samples[i].lat) * 111.32;
@@ -12500,7 +12525,7 @@ var ReportKit = (function () {
             var temp = weighted / totalWeight;
             var rgb = MapCtrl.tempRGBFor(temp);
             var offset = (py * width + px) * 4;
-            image.data[offset] = rgb[0]; image.data[offset + 1] = rgb[1]; image.data[offset + 2] = rgb[2]; image.data[offset + 3] = 226;
+            image.data[offset] = rgb[0]; image.data[offset + 1] = rgb[1]; image.data[offset + 2] = rgb[2]; image.data[offset + 3] = 210;
           }
         }
         ctx.putImageData(image, 0, 0);
@@ -12545,8 +12570,17 @@ var ReportKit = (function () {
             var names = ALL_PARISH_NAMES.filter(function (name) { return !!PARISH_POLYGONS[name]; });
             var rings = names.map(function (name) { return PARISH_POLYGONS[name].ring; });
             var bounds = boundsFromRings(rings);
-            fitBounds = [[bounds.minLat, bounds.minLon], [bounds.maxLat, bounds.maxLon]];
-            reportMap.fitBounds(fitBounds, { padding: [12, 12], maxZoom: 12, animate: false });
+            /* Vista regional: mapa base normal alrededor; el calor solo dentro del municipio. */
+            var viewPadLon = Math.max(0.35, (bounds.maxLon - bounds.minLon) * 0.55);
+            var viewPadLat = Math.max(0.28, (bounds.maxLat - bounds.minLat) * 0.55);
+            var viewBounds = {
+              minLon: bounds.minLon - viewPadLon,
+              maxLon: bounds.maxLon + viewPadLon,
+              minLat: bounds.minLat - viewPadLat,
+              maxLat: bounds.maxLat + viewPadLat
+            };
+            fitBounds = [[viewBounds.minLat, viewBounds.minLon], [viewBounds.maxLat, viewBounds.maxLon]];
+            reportMap.fitBounds(fitBounds, { padding: [18, 18], maxZoom: 11, animate: false });
             var rowsByName = {};
             (data.parishes || []).forEach(function (row) { rowsByName[row.name] = row; });
             /* Una sola imagen: mapa de calor suave (gradiente) + líneas azules sobre los mismos anillos.
@@ -12611,18 +12645,33 @@ var ReportKit = (function () {
               }
             }
             pctx.putImageData(heatImg, 0, 0);
-            /* 2) Líneas azules de límites sobre el mismo canvas → encaje exacto con el calor */
+            /* Contornos negros de parroquias (solo líneas; el color queda en el calor). */
             names.forEach(function (name) {
-              pctx.strokeStyle = "#1a5cff";
-              pctx.lineWidth = 2.2;
+              pctx.strokeStyle = "#000000";
+              pctx.lineWidth = 2.4;
               pctx.lineJoin = "round";
               pctx.lineCap = "round";
               drawRingPath(pctx, PARISH_POLYGONS[name].ring);
               pctx.stroke();
             });
-            L.imageOverlay(parishCanvas.toDataURL("image/png"), fitBounds, {
-              pane: "temperatureReportHeatPane", opacity: 1, interactive: false
+            /* Overlay de calor anclado al bbox del municipio (no a toda la vista). */
+            var parishLatLngBounds = [[bounds.minLat, bounds.minLon], [bounds.maxLat, bounds.maxLon]];
+            L.imageOverlay(parishCanvas.toDataURL("image/png"), parishLatLngBounds, {
+              pane: "temperatureReportHeatPane", opacity: 0.92, interactive: false
             }).addTo(reportMap);
+            /* Borde exterior negro del municipio Simón Bolívar. */
+            try {
+              var muniRing = (SIMON_BOLIVAR_BOUNDARY && SIMON_BOLIVAR_BOUNDARY.geometry && SIMON_BOLIVAR_BOUNDARY.geometry.coordinates)
+                ? SIMON_BOLIVAR_BOUNDARY.geometry.coordinates[0]
+                : null;
+              if (muniRing && muniRing.length) {
+                var muniLatLngs = muniRing.map(function (c) { return [c[1], c[0]]; });
+                L.polyline(muniLatLngs, {
+                  color: "#000000", weight: 3.2, opacity: 1, lineJoin: "round",
+                  pane: "temperatureReportBoundaryPane", interactive: false
+                }).addTo(reportMap);
+              }
+            } catch (eMuniBorder) {}
             names.forEach(function (name) {
               var shape = PARISH_POLYGONS[name];
               var row = rowsByName[name] || { temp: null, feel: null };
@@ -12633,11 +12682,23 @@ var ReportKit = (function () {
           } else {
             var regionalBounds = data.mapBounds || { minLon: -80.8, maxLon: -51.2, minLat: -4.3, maxLat: 14.7 };
             fitBounds = [[regionalBounds.minLat, regionalBounds.minLon], [regionalBounds.maxLat, regionalBounds.maxLon]];
-            reportMap.fitBounds(fitBounds, { padding: [0, 0], animate: false });
+            reportMap.fitBounds(fitBounds, { padding: [8, 8], animate: false });
             L.imageOverlay(makeNationalHeatImage(data, regionalBounds), fitBounds, {
-              pane: "temperatureReportHeatPane", opacity: 0.58, interactive: false
+              pane: "temperatureReportHeatPane", opacity: 0.72, interactive: false
             }).addTo(reportMap);
-            /* Sin contorno de Venezuela: evita la línea de la zona en reclamación y deja el mapa de calor continuo. */
+            /* Contornos negros: Venezuela y Guayana Esequiba (Esequibo). */
+            function addBlackRings(rings, weight) {
+              (rings || []).forEach(function (ring) {
+                if (!ring || ring.length < 3) return;
+                var latlngs = ring.map(function (c) { return [c[1], c[0]]; });
+                L.polyline(latlngs, {
+                  color: "#000000", weight: weight || 2.8, opacity: 1, lineJoin: "round",
+                  pane: "temperatureReportBoundaryPane", interactive: false
+                }).addTo(reportMap);
+              });
+            }
+            addBlackRings(getVenezuelaRings(), 3.0);
+            addBlackRings(getEsequiboRings(), 2.6);
             (data.zones || []).forEach(function (zone) {
               if (zone.temp == null) return;
               var stPart = zone.feel != null ? " ST" + degrees(zone.feel) : "";
