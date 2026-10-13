@@ -12600,7 +12600,7 @@ var ReportKit = (function () {
         var image = ctx.createImageData(width, height);
         var northY = mercatorY(bounds.maxLat), southY = mercatorY(bounds.minLat);
         var spanLon = bounds.maxLon - bounds.minLon;
-        var samples = data.samples || [], sigma2 = 2 * 175 * 175;
+        var samples = data.samples || [], sigma2 = 2 * 95 * 95;
         /* Calor en Venezuela + Esequibo (sin dibujar límites). */
         var maskRings = getVenezuelaRings().concat(getEsequiboRings());
         for (var py = 0; py < height; py++) {
@@ -12622,7 +12622,10 @@ var ReportKit = (function () {
             var temp = weighted / totalWeight;
             var rgb = MapCtrl.tempRGBFor(temp);
             var offset = (py * width + px) * 4;
-            image.data[offset] = rgb[0]; image.data[offset + 1] = rgb[1]; image.data[offset + 2] = rgb[2]; image.data[offset + 3] = 210;
+            /* Textura de campo térmico */
+            temp += Math.sin(lon * 40) * Math.cos(lat * 55) * 0.45;
+            rgb = MapCtrl.tempRGBFor(temp);
+            image.data[offset] = rgb[0]; image.data[offset + 1] = rgb[1]; image.data[offset + 2] = rgb[2]; image.data[offset + 3] = 175;
           }
         }
         ctx.putImageData(image, 0, 0);
@@ -12667,10 +12670,9 @@ var ReportKit = (function () {
             var names = ALL_PARISH_NAMES.filter(function (name) { return !!PARISH_POLYGONS[name]; });
             var rings = names.map(function (name) { return PARISH_POLYGONS[name].ring; });
             var bounds = boundsFromRings(rings);
-            /* Vista regional: mapa base normal alrededor; el calor solo dentro del municipio. */
-            /* Poco margen: el municipio se ve más grande; alrededor solo mapa base. */
-            var viewPadLon = Math.max(0.08, (bounds.maxLon - bounds.minLon) * 0.14);
-            var viewPadLat = Math.max(0.06, (bounds.maxLat - bounds.minLat) * 0.16);
+            /* Mapa profesional: calor continuo (degradado) en toda la vista + bordes de parroquia. */
+            var viewPadLon = Math.max(0.10, (bounds.maxLon - bounds.minLon) * 0.18);
+            var viewPadLat = Math.max(0.08, (bounds.maxLat - bounds.minLat) * 0.20);
             var viewBounds = {
               minLon: bounds.minLon - viewPadLon,
               maxLon: bounds.maxLon + viewPadLon,
@@ -12678,22 +12680,20 @@ var ReportKit = (function () {
               maxLat: bounds.maxLat + viewPadLat
             };
             fitBounds = [[viewBounds.minLat, viewBounds.minLon], [viewBounds.maxLat, viewBounds.maxLon]];
-            reportMap.fitBounds(fitBounds, { padding: [10, 10], maxZoom: 13, animate: false });
+            reportMap.fitBounds(fitBounds, { padding: [8, 8], maxZoom: 12, animate: false });
             var rowsByName = {};
             (data.parishes || []).forEach(function (row) { rowsByName[row.name] = row; });
-            /* Una sola imagen: mapa de calor suave (gradiente) + líneas azules sobre los mismos anillos.
-               Así el color no queda “cuadrado” por parroquia y las líneas encajan en el municipio. */
-            var parishCanvas = document.createElement("canvas");
-            var pcW = 1400;
-            /* Altura proporcional en lat lineal (igual que ImageOverlay de Leaflet). */
-            var spanLon = bounds.maxLon - bounds.minLon;
-            var spanLat = bounds.maxLat - bounds.minLat;
+
+            var pcW = 1600;
+            var spanLon = viewBounds.maxLon - viewBounds.minLon;
+            var spanLat = viewBounds.maxLat - viewBounds.minLat;
             var pcH = Math.max(1, Math.round(pcW * spanLat / Math.max(spanLon, 1e-9)));
+            var parishCanvas = document.createElement("canvas");
             parishCanvas.width = pcW;
             parishCanvas.height = pcH;
             var pctx = parishCanvas.getContext("2d");
-            function lonToX(lon) { return (lon - bounds.minLon) / spanLon * pcW; }
-            function latToY(lat) { return (bounds.maxLat - lat) / spanLat * pcH; }
+            function lonToX(lon) { return (lon - viewBounds.minLon) / spanLon * pcW; }
+            function latToY(lat) { return (viewBounds.maxLat - lat) / spanLat * pcH; }
             function drawRingPath(ctx, ring) {
               if (!ring || ring.length < 3) return;
               ctx.beginPath();
@@ -12703,12 +12703,12 @@ var ReportKit = (function () {
               }
               ctx.closePath();
             }
-            /* 1) Degradado continuo de temperatura (textura suave) solo dentro del municipio. */
-            var heatImg = pctx.createImageData(pcW, pcH);
+
+            /* Muestras para IDW continuo (no bloques por parroquia). */
             var allSamples = [];
             (data.samples || []).forEach(function (sample) {
               if (sample.temp != null && isFinite(Number(sample.temp))) {
-                allSamples.push({ lat: sample.lat, lon: sample.lon, temp: Number(sample.temp) });
+                allSamples.push({ lat: Number(sample.lat), lon: Number(sample.lon), temp: Number(sample.temp) });
               }
             });
             (data.parishes || []).forEach(function (row) {
@@ -12717,16 +12717,12 @@ var ReportKit = (function () {
               if (!shape || !shape.centroid) return;
               allSamples.push({ lat: shape.centroid[0], lon: shape.centroid[1], temp: Number(row.temp) });
             });
-            var sigma2 = 2 * 28 * 28;
+            var sigma2 = 2 * 22 * 22;
+            var heatImg = pctx.createImageData(pcW, pcH);
             for (var py = 0; py < pcH; py++) {
-              var lat = bounds.maxLat - (py + 0.5) / pcH * spanLat;
+              var lat = viewBounds.maxLat - (py + 0.5) / pcH * spanLat;
               for (var px = 0; px < pcW; px++) {
-                var lon = bounds.minLon + (px + 0.5) / pcW * spanLon;
-                var inside = false;
-                for (var ni = 0; ni < names.length; ni++) {
-                  if (pointInRing(lon, lat, PARISH_POLYGONS[names[ni]].ring)) { inside = true; break; }
-                }
-                if (!inside) continue;
+                var lon = viewBounds.minLon + (px + 0.5) / pcW * spanLon;
                 var weighted = 0, totalWeight = 0;
                 for (var i = 0; i < allSamples.length; i++) {
                   var dLat = (lat - allSamples[i].lat) * 111.32;
@@ -12738,68 +12734,29 @@ var ReportKit = (function () {
                 }
                 if (!totalWeight) continue;
                 var temp = weighted / totalWeight;
-                /* Textura suave: microvariación local sin romper el degradado. */
-                var n = Math.sin(lon * 180.0) * Math.cos(lat * 220.0) * 0.35
-                      + Math.sin((lon + lat) * 90.0) * 0.25;
-                temp = temp + n;
+                /* Microtextura para aspecto de campo térmico profesional. */
+                temp += Math.sin(lon * 210) * Math.cos(lat * 180) * 0.28
+                     + Math.sin((lon * 3 + lat * 2) * 40) * 0.18;
                 var rgb = MapCtrl.tempRGBFor(temp);
                 var offset = (py * pcW + px) * 4;
                 heatImg.data[offset] = rgb[0];
                 heatImg.data[offset + 1] = rgb[1];
                 heatImg.data[offset + 2] = rgb[2];
-                heatImg.data[offset + 3] = 215;
-              }
-            }
-            /* Cerrar huecos del degradado: dilatar solo entre parroquias (mantiene textura, sin bloques planos). */
-            for (var pass = 0; pass < 4; pass++) {
-              var src = new Uint8ClampedArray(heatImg.data);
-              for (var py2 = 0; py2 < pcH; py2++) {
-                for (var px2 = 0; px2 < pcW; px2++) {
-                  var off2 = (py2 * pcW + px2) * 4;
-                  if (src[off2 + 3] > 15) continue;
-                  var lon2 = bounds.minLon + (px2 + 0.5) / pcW * spanLon;
-                  var lat2 = bounds.maxLat - (py2 + 0.5) / pcH * spanLat;
-                  var nearParish = false;
-                  for (var ni2 = 0; ni2 < names.length; ni2++) {
-                    if (pointInRing(lon2, lat2, PARISH_POLYGONS[names[ni2]].ring)) { nearParish = true; break; }
-                  }
-                  /* Solo dilatar huecos internos: vecinos con color */
-                  var ar = 0, ag = 0, ab = 0, aa = 0, cnt = 0;
-                  for (var dy = -1; dy <= 1; dy++) {
-                    for (var dx = -1; dx <= 1; dx++) {
-                      if (!dx && !dy) continue;
-                      var nx = px2 + dx, ny = py2 + dy;
-                      if (nx < 0 || ny < 0 || nx >= pcW || ny >= pcH) continue;
-                      var no = (ny * pcW + nx) * 4;
-                      if (src[no + 3] < 15) continue;
-                      ar += src[no]; ag += src[no + 1]; ab += src[no + 2]; aa += src[no + 3];
-                      cnt++;
-                    }
-                  }
-                  if (cnt < 2) continue;
-                  heatImg.data[off2] = Math.round(ar / cnt);
-                  heatImg.data[off2 + 1] = Math.round(ag / cnt);
-                  heatImg.data[off2 + 2] = Math.round(ab / cnt);
-                  heatImg.data[off2 + 3] = Math.round(aa / cnt);
-                }
+                heatImg.data[offset + 3] = 165;
               }
             }
             pctx.putImageData(heatImg, 0, 0);
-            /* Bordes negros en el MISMO canvas que el calor → alineación exacta. */
+            /* Contornos de parroquia (línea fina oscura, estilo mapa profesional). */
             names.forEach(function (name) {
-              pctx.strokeStyle = "#111111";
-              pctx.lineWidth = 3.2;
+              pctx.strokeStyle = "rgba(30,45,70,0.88)";
+              pctx.lineWidth = 2.4;
               pctx.lineJoin = "round";
               pctx.lineCap = "round";
               drawRingPath(pctx, PARISH_POLYGONS[name].ring);
               pctx.stroke();
             });
-            var parishLatLngBounds = [
-              [bounds.minLat, bounds.minLon],
-              [bounds.maxLat, bounds.maxLon]
-            ];
-            L.imageOverlay(parishCanvas.toDataURL("image/png"), parishLatLngBounds, {
-              pane: "temperatureReportHeatPane", opacity: 0.9, interactive: false
+            L.imageOverlay(parishCanvas.toDataURL("image/png"), fitBounds, {
+              pane: "temperatureReportHeatPane", opacity: 1, interactive: false
             }).addTo(reportMap);
             names.forEach(function (name) {
               var shape = PARISH_POLYGONS[name];
@@ -12808,7 +12765,8 @@ var ReportKit = (function () {
                 esc(name.toUpperCase()) + '<br/><span style="font-size:8px;">T ' + degrees(row.temp) + ' · ST ' + degrees(row.feel) + '</span></div>';
               addReportMapLabel(shape.centroid[0], shape.centroid[1], labelHtml, [148, 28], [74, 14], 1000);
             });
-          } else {
+          
+} else {
             var regionalBounds = data.mapBounds || { minLon: -80.8, maxLon: -51.2, minLat: -4.3, maxLat: 14.7 };
             fitBounds = [[regionalBounds.minLat, regionalBounds.minLon], [regionalBounds.maxLat, regionalBounds.maxLon]];
             reportMap.fitBounds(fitBounds, { padding: [8, 8], animate: false });
@@ -12841,12 +12799,12 @@ var ReportKit = (function () {
               }
               resolve(true);
             }
-            /* Municipio: basemap sin etiquetas del mapa (evita saturación); se mantienen labels de parroquias. */
+            /* Municipio: relieve topográfico (estilo profesional); Venezuela: calles del sitio. */
             var basemapUrl = (mode === "municipio")
-              ? "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+              ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
               : REPORT_SITE_BASEMAP;
             var basemapAttr = (mode === "municipio")
-              ? "© ESRI · CANVAS"
+              ? "© ESRI · TOPO"
               : REPORT_SITE_BASEMAP_ATTR;
             var tiles = L.tileLayer(
               basemapUrl,
