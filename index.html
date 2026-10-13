@@ -2245,6 +2245,8 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
   }
 
   function stripReportMapTiles(root) {
+    /* Ya no se eliminan teselas del mapa de reportes: se necesitan para el basemap del sitio.
+       Solo se limpian si están rotas (0×0). */
     if (!root) return;
     var imgs = root.querySelectorAll("img");
     for (var i = 0; i < imgs.length; i++) {
@@ -2252,7 +2254,9 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
         var img = imgs[i];
         var src = img.currentSrc || img.getAttribute("src") || "";
         var isLeafletTile = img.classList && img.classList.contains("leaflet-tile");
-        if (isLeafletTile || src.indexOf("tile/") >= 0 || /arcgisonline|openstreetmap|tile\.openstreetmap/i.test(src)) {
+        var isMap = isLeafletTile || src.indexOf("tile/") >= 0 || /arcgisonline|openstreetmap|tile\.openstreetmap|rainviewer/i.test(src);
+        if (!isMap) continue;
+        if (img.complete && (img.naturalWidth === 0 || img.naturalHeight === 0)) {
           img.removeAttribute("src");
           img.removeAttribute("srcset");
           img.style.display = "none";
@@ -2426,6 +2430,16 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
     src = String(src || "");
     return /report-map-bg/i.test(src);
   }
+  function isReportMapTileImg(img) {
+    if (!img) return false;
+    try {
+      if (img.classList && (img.classList.contains("leaflet-tile") || img.classList.contains("leaflet-image-layer"))) return true;
+      var src = img.getAttribute("src") || img.currentSrc || "";
+      if (/arcgisonline|tile\.openstreetmap|server\.arcgisonline|MapServer\/tile|rainviewer/i.test(src)) return true;
+      if (img.closest && img.closest(".leaflet-container, .leaflet-map-pane, #temperature-report-map-tiles, #rain-report-map-tiles, #quake-report-map, [id$='-report-map']")) return true;
+    } catch (e) {}
+    return false;
+  }
   function imgLoadedOk(img) {
     try {
       return !!(img && img.complete && img.naturalWidth > 0 && img.naturalHeight > 0);
@@ -2461,6 +2475,11 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
           if (/^data:image\//i.test(src) && imgLoadedOk(img)) {
             /* dataURL válido (logo/fondo precargado). */
             img.style.display = "block";
+            continue;
+          }
+          /* Conservar teselas del mapa del reporte (mismo estilo del sitio). */
+          if (isReportMapTileImg(img)) {
+            img.style.display = "";
             continue;
           }
           /* Otras imágenes: quitar en móvil. */
@@ -2569,6 +2588,9 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
               kill[i].style.display = "block";
               continue;
             }
+            if (tagK === "img" && isReportMapTileImg(kill[i])) {
+              continue; /* conservar mapa base del reporte */
+            }
             kill[i].style.display = "none";
             if (tagK === "img") {
               kill[i].removeAttribute("src");
@@ -2602,11 +2624,12 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
           var src = el.getAttribute("src") || "";
           var asset = el.getAttribute("data-report-asset") || "";
           if (isReportLogoSrc(src) || asset === "logo" || asset === "bg") return false;
+          if (isReportMapTileImg(el)) return false;
           if (isReportMapBgSrc(src) && imgLoadedOk(el)) return false;
           if (/^data:image\//i.test(src) && imgLoadedOk(el)) return false;
           if (el.getAttribute("data-report-zero-size") === "1") return true;
           if (isReportMapBgSrc(src) && !imgLoadedOk(el)) return true;
-          if (mobile && !isReportLogoSrc(src) && !isReportMapBgSrc(src) && !/^data:image\//i.test(src)) return true;
+          if (mobile && !isReportLogoSrc(src) && !isReportMapBgSrc(src) && !isReportMapTileImg(el) && !/^data:image\//i.test(src)) return true;
           if (el.complete && (el.naturalWidth === 0 || el.naturalHeight === 0)) return true;
         }
         if (tag === "svg") {
@@ -12626,29 +12649,28 @@ var ReportKit = (function () {
 
           return new Promise(function (resolve) {
             var settled = false, successfulTiles = 0;
-            var timer = window.setTimeout(function () { finish(successfulTiles > 0); }, 8000);
+            var timer = window.setTimeout(function () { finish(successfulTiles > 0); }, 10000);
             function finish(ok) {
               if (settled) return;
               settled = true;
               window.clearTimeout(timer);
-              if (ok) {
-                if (fallback) fallback.style.display = "none";
-                mapEl.style.opacity = "1";
-              } else {
-                try { if (reportMap) reportMap.remove(); } catch (eMapRemove) {}
-                reportMap = null;
-                mapEl.style.display = "none";
+              /* Siempre dejar visible el contenedor de mapa: basemap del sitio + calor. */
+              mapEl.style.opacity = "1";
+              mapEl.style.display = "block";
+              if (ok && fallback) {
+                /* Basemap listo: el calor Leaflet queda encima; ocultar solo si aporta duplicado confuso */
+                fallback.style.opacity = "0.0";
               }
-              resolve(ok);
+              resolve(true);
             }
             var tiles = L.tileLayer(
               REPORT_SITE_BASEMAP,
-              { maxZoom: 19, crossOrigin: true, attribution: "© ESRI · DATOS OSM Y OTROS" }
+              { maxZoom: 19, crossOrigin: true, attribution: REPORT_SITE_BASEMAP_ATTR }
             );
             tiles.on("tileload", function () { successfulTiles++; });
             tiles.once("load", function () { finish(successfulTiles > 0); });
             tiles.addTo(reportMap);
-            window.setTimeout(function () { try { if (reportMap) reportMap.invalidateSize({ pan: false }); } catch (eSize) {} }, 100);
+            window.setTimeout(function () { try { if (reportMap) reportMap.invalidateSize({ pan: false }); } catch (eSize) {} }, 120);
           });
         } catch (eMap) {
           console.warn("No se pudo preparar el mapa térmico con teselas; se conservará el mapa vectorial de respaldo.", eMap);
@@ -12688,8 +12710,8 @@ var ReportKit = (function () {
               '<div style="position:absolute;top:196px;left:64px;right:64px;height:1px;background:linear-gradient(90deg,#B4D445,rgba(180,212,69,0));"></div>' +
               '<div style="margin-top:28px;max-width:78%;position:relative;z-index:1;">' +
                 '<div style="font-size:62px;font-weight:900;line-height:1.02;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.18);">REPORTE VISUAL<br/>DE TEMPERATURA</div>' +
-                '<div style="margin-top:17px;font-size:24px;font-weight:550;color:rgba(255,255,255,.93);">' + esc((dateLabel + " · " + timeLabel + " · HORA DE VENEZUELA").toUpperCase()) + '</div>' +
-                '<div style="margin-top:8px;font-size:29px;font-weight:850;color:#B4D445;">' + esc(placeLabel) + '</div>' +
+                '<div style="margin-top:17px;font-size:20px;font-weight:550;color:rgba(255,255,255,.93);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc((dateLabel + " · " + timeLabel + " · HORA DE VENEZUELA").toUpperCase()) + '</div>' +
+                (mode === "municipio" ? ('<div style="margin-top:8px;font-size:22px;font-weight:850;color:#B4D445;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(placeLabel) + '</div>') : '') +
               '</div>' +
             '</div>' +
             '<div style="position:relative;z-index:1;padding:6px 44px 28px;box-sizing:border-box;">' +
@@ -13011,7 +13033,7 @@ var ReportKit = (function () {
               '<div style="position:absolute;top:196px;left:64px;right:64px;height:1px;background:linear-gradient(90deg,#B4D445,rgba(180,212,69,0));"></div>' +
               '<div style="margin-top:28px;max-width:78%;position:relative;z-index:1;">' +
                 '<div style="font-size:62px;font-weight:900;line-height:1.02;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.18);">REPORTE VISUAL<br/>DE LLUVIA</div>' +
-                '<div style="margin-top:17px;font-size:24px;font-weight:550;color:rgba(255,255,255,.93);">' + esc((dateLabel + " · " + timeLabel + " · HORA DE VENEZUELA").toUpperCase()) + '</div>' +
+                '<div style="margin-top:17px;font-size:20px;font-weight:550;color:rgba(255,255,255,.93);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc((dateLabel + " · " + timeLabel + " · HORA DE VENEZUELA").toUpperCase()) + '</div>' +
                 '<div style="margin-top:8px;font-size:29px;font-weight:850;color:#B4D445;">VENEZUELA</div>' +
               '</div>' +
             '</div>' +
@@ -13095,7 +13117,7 @@ var ReportKit = (function () {
                     crossOrigin: true,
                     attribution: "© RainViewer"
                   }).addTo(reportMap);
-                  window.setTimeout(function () { finish(successfulTiles > 0); }, 1200);
+                  window.setTimeout(function () { finish(true); }, 1500);
                 });
                 base.addTo(reportMap);
                 window.setTimeout(function () { try { if (reportMap) reportMap.invalidateSize({ pan: false }); } catch (e1) {} }, 100);
