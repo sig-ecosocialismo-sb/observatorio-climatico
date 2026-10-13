@@ -2478,8 +2478,8 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
             continue;
           }
           /* Conservar teselas del mapa del reporte (mismo estilo del sitio). */
-          if (isReportMapTileImg(img)) {
-            img.style.display = "";
+          if (isReportMapTileImg(img) || (img.getAttribute("data-report-asset") === "mapflat")) {
+            img.style.display = "block";
             continue;
           }
           /* Otras imágenes: quitar en móvil. */
@@ -2529,6 +2529,103 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
       }
       /* No tocar backgroundImage CSS del fondo degradado de respaldo. */
     } catch (ePrep) {}
+  }
+
+  /* Aplana mapas Leaflet del reporte a una sola imagen (móvil: garantiza mapa de alrededor). */
+  function flattenLeafletMapsInReport(root) {
+    if (!root) return Promise.resolve();
+    var containers = root.querySelectorAll(
+      "#temperature-report-map-tiles, #rain-report-map-tiles, #quake-report-map, .leaflet-container"
+    );
+    if (!containers.length) return Promise.resolve();
+    var tasks = [];
+    for (var i = 0; i < containers.length; i++) {
+      (function (mapEl) {
+        if (!mapEl || mapEl.getAttribute("data-report-flattened") === "1") return;
+        if (mapEl.style.display === "none" || mapEl.offsetWidth < 4 || mapEl.offsetHeight < 4) return;
+        tasks.push(new Promise(function (resolve) {
+          try {
+            var w = mapEl.offsetWidth;
+            var h = mapEl.offsetHeight;
+            var scale = 2;
+            var canvas = document.createElement("canvas");
+            canvas.width = Math.max(1, Math.round(w * scale));
+            canvas.height = Math.max(1, Math.round(h * scale));
+            var ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#e8eef2";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            var mapRect = mapEl.getBoundingClientRect();
+
+            function drawNode(node) {
+              if (!node || node.nodeType !== 1) return;
+              var tag = String(node.tagName || "").toLowerCase();
+              if (tag === "img") {
+                try {
+                  if (!node.complete || !node.naturalWidth || !node.naturalHeight) return;
+                  var r = node.getBoundingClientRect();
+                  var x = (r.left - mapRect.left) * scale;
+                  var y = (r.top - mapRect.top) * scale;
+                  var dw = Math.max(1, r.width * scale);
+                  var dh = Math.max(1, r.height * scale);
+                  ctx.drawImage(node, x, y, dw, dh);
+                } catch (eImg) {}
+                return;
+              }
+              if (tag === "canvas") {
+                try {
+                  if (!node.width || !node.height) return;
+                  var rc = node.getBoundingClientRect();
+                  ctx.drawImage(node, (rc.left - mapRect.left) * scale, (rc.top - mapRect.top) * scale, Math.max(1, rc.width * scale), Math.max(1, rc.height * scale));
+                } catch (eCv) {}
+                return;
+              }
+              var kids = node.children || [];
+              for (var k = 0; k < kids.length; k++) drawNode(kids[k]);
+            }
+
+            /* Orden: tiles base, luego overlays (calor), luego labels si son img */
+            var panes = mapEl.querySelectorAll(".leaflet-tile-pane, .leaflet-overlay-pane, .leaflet-marker-pane, .leaflet-map-pane");
+            if (panes.length) {
+              for (var p = 0; p < panes.length; p++) drawNode(panes[p]);
+            } else {
+              drawNode(mapEl);
+            }
+
+            var url = canvas.toDataURL("image/png");
+            mapEl.style.opacity = "1";
+            mapEl.style.display = "block";
+            mapEl.style.background = "#e8eef2";
+            /* Imagen estática del basemap + calor; se conservan etiquetas (marker pane). */
+            var img = document.createElement("img");
+            img.setAttribute("data-report-asset", "mapflat");
+            img.alt = "Mapa";
+            img.src = url;
+            img.style.cssText = "position:absolute;inset:0;width:100%;height:100%;object-fit:fill;display:block;z-index:1;pointer-events:none;";
+            mapEl.insertBefore(img, mapEl.firstChild);
+            var hideSel = mapEl.querySelectorAll(".leaflet-tile-pane, .leaflet-overlay-pane, .leaflet-shadow-pane");
+            for (var hi = 0; hi < hideSel.length; hi++) {
+              hideSel[hi].style.visibility = "hidden";
+            }
+            var markers = mapEl.querySelectorAll(".leaflet-marker-pane, .leaflet-tooltip-pane");
+            for (var mi = 0; mi < markers.length; mi++) {
+              markers[mi].style.visibility = "visible";
+              markers[mi].style.zIndex = "650";
+            }
+            mapEl.setAttribute("data-report-flattened", "1");
+            var parent = mapEl.parentNode;
+            if (parent) {
+              var fb = parent.querySelector("[id$='-fallback'], [id*='fallback']");
+              if (fb) fb.style.display = "none";
+            }
+            resolve();
+          } catch (eFlat) {
+            console.warn("flattenLeafletMapsInReport", eFlat);
+            resolve();
+          }
+        }));
+      })(containers[i]);
+    }
+    return Promise.all(tasks);
   }
 
   function captureReportNode(card, scale) {
@@ -2625,6 +2722,7 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
           var asset = el.getAttribute("data-report-asset") || "";
           if (isReportLogoSrc(src) || asset === "logo" || asset === "bg") return false;
           if (isReportMapTileImg(el)) return false;
+          if ((el.getAttribute("data-report-asset") || "") === "mapflat") return false;
           if (isReportMapBgSrc(src) && imgLoadedOk(el)) return false;
           if (/^data:image\//i.test(src) && imgLoadedOk(el)) return false;
           if (el.getAttribute("data-report-zero-size") === "1") return true;
@@ -12085,7 +12183,8 @@ var ReportKit = (function () {
         .then(function () { return applyReportAssetsToCard(card, { includeBg: false }); })
         .then(function () { return esperarImagenes(card); })
         .then(function () { return new Promise(function (resolve) { setTimeout(resolve, 120); }); })
-        .then(function () { ajustarAlto(); return capturar(); })
+        .then(function () { ajustarAlto(); return flattenLeafletMapsInReport(card); })
+        .then(function () { return capturar(); })
         .then(exportarConRespaldo)
         .catch(function (errorReporte) {
           console.error(errorReporte);
@@ -12728,7 +12827,7 @@ var ReportKit = (function () {
 
           return new Promise(function (resolve) {
             var settled = false, successfulTiles = 0;
-            var timer = window.setTimeout(function () { finish(successfulTiles > 0); }, 10000);
+            var timer = window.setTimeout(function () { finish(successfulTiles > 0); }, isMobileDevice() ? 14000 : 10000);
             function finish(ok) {
               if (settled) return;
               settled = true;
@@ -12892,6 +12991,8 @@ var ReportKit = (function () {
         });
       }).then(function () {
         adjustCardHeight();
+        return flattenLeafletMapsInReport(card);
+      }).then(function () {
         return capture();
       }).then(exportWithFallback).catch(function (error) {
         console.error("Reporte visual de temperatura:", error);
@@ -13287,6 +13388,8 @@ var ReportKit = (function () {
         });
       }).then(function () {
         if (card && card.scrollHeight > STORY_H) card.style.height = card.scrollHeight + "px";
+        return flattenLeafletMapsInReport(card);
+      }).then(function () {
         return capture();
       }).then(exportWithFallback).catch(function (error) {
         console.error("Reporte visual de lluvia:", error);
