@@ -12723,6 +12723,15 @@ var ReportKit = (function () {
               var lat = viewBounds.maxLat - (py + 0.5) / pcH * spanLat;
               for (var px = 0; px < pcW; px++) {
                 var lon = viewBounds.minLon + (px + 0.5) / pcW * spanLon;
+                /* Solo colorear DENTRO del municipio (unión de parroquias). */
+                var insideMuni = false;
+                for (var ni = 0; ni < names.length; ni++) {
+                  if (pointInRing(lon, lat, PARISH_POLYGONS[names[ni]].ring)) {
+                    insideMuni = true;
+                    break;
+                  }
+                }
+                if (!insideMuni) continue;
                 var weighted = 0, totalWeight = 0;
                 for (var i = 0; i < allSamples.length; i++) {
                   var dLat = (lat - allSamples[i].lat) * 111.32;
@@ -12734,7 +12743,6 @@ var ReportKit = (function () {
                 }
                 if (!totalWeight) continue;
                 var temp = weighted / totalWeight;
-                /* Microtextura para aspecto de campo térmico profesional. */
                 temp += Math.sin(lon * 210) * Math.cos(lat * 180) * 0.28
                      + Math.sin((lon * 3 + lat * 2) * 40) * 0.18;
                 var rgb = MapCtrl.tempRGBFor(temp);
@@ -12742,7 +12750,41 @@ var ReportKit = (function () {
                 heatImg.data[offset] = rgb[0];
                 heatImg.data[offset + 1] = rgb[1];
                 heatImg.data[offset + 2] = rgb[2];
-                heatImg.data[offset + 3] = 165;
+                heatImg.data[offset + 3] = 185;
+              }
+            }
+            /* Cerrar huecos internos entre parroquias (mantiene forma del municipio, sin rectángulo). */
+            for (var pass = 0; pass < 3; pass++) {
+              var src = new Uint8ClampedArray(heatImg.data);
+              for (var py2 = 0; py2 < pcH; py2++) {
+                for (var px2 = 0; px2 < pcW; px2++) {
+                  var off2 = (py2 * pcW + px2) * 4;
+                  if (src[off2 + 3] > 12) continue;
+                  var lon2 = viewBounds.minLon + (px2 + 0.5) / pcW * spanLon;
+                  var lat2 = viewBounds.maxLat - (py2 + 0.5) / pcH * spanLat;
+                  var near = false;
+                  for (var nj = 0; nj < names.length; nj++) {
+                    if (pointInRing(lon2, lat2, PARISH_POLYGONS[names[nj]].ring)) { near = true; break; }
+                  }
+                  if (!near) continue;
+                  var ar = 0, ag = 0, ab = 0, aa = 0, cnt = 0;
+                  for (var dy = -1; dy <= 1; dy++) {
+                    for (var dx = -1; dx <= 1; dx++) {
+                      if (!dx && !dy) continue;
+                      var nx = px2 + dx, ny = py2 + dy;
+                      if (nx < 0 || ny < 0 || nx >= pcW || ny >= pcH) continue;
+                      var no = (ny * pcW + nx) * 4;
+                      if (src[no + 3] < 12) continue;
+                      ar += src[no]; ag += src[no + 1]; ab += src[no + 2]; aa += src[no + 3];
+                      cnt++;
+                    }
+                  }
+                  if (cnt < 2) continue;
+                  heatImg.data[off2] = Math.round(ar / cnt);
+                  heatImg.data[off2 + 1] = Math.round(ag / cnt);
+                  heatImg.data[off2 + 2] = Math.round(ab / cnt);
+                  heatImg.data[off2 + 3] = Math.round(aa / cnt);
+                }
               }
             }
             pctx.putImageData(heatImg, 0, 0);
