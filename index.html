@@ -1252,6 +1252,46 @@
       #map-toolbar svg { width: 18px; height: 18px; }
       /* Solo teléfono: sin barra de zoom preciso. */
       #zoom-precise { display: none !important; }
+      /* Leyenda abajo-derecha para no chocar con el menú de herramientas (izquierda). */
+      .map-legend {
+        left: auto !important;
+        right: 10px !important;
+        bottom: 12px !important;
+        max-width: min(160px, 42vw);
+        max-height: min(140px, 28vh);
+        z-index: 480;
+      }
+      /* Objetivos táctiles más cómodos */
+      #map-toolbar .mtb-tools-toggle,
+      #map-toolbar .mtb-tools-panel button {
+        width: 44px; height: 44px;
+      }
+      #map-toolbar .mtb-zoom button {
+        width: 44px; height: 40px; font-size: 1.2rem;
+      }
+      /* Evitar que el panel de herramientas se corte o se salga del mapa */
+      #map-toolbar .mtb-tools {
+        max-width: 52px;
+        max-height: calc(100% - 8px);
+      }
+      #map-toolbar .mtb-tools-panel {
+        max-height: calc(100% - 56px);
+        gap: 8px;
+        padding-bottom: 8px;
+      }
+      /* Paneles bajo el mapa: menús de reporte no se salen del viewport */
+      #quakes-panel, #temp-panel, #rain-panel, .quakes-panel, .waves-panel {
+        position: relative;
+        z-index: 30;
+      }
+      #rain-map-report-menu,
+      #temperature-map-report-menu,
+      #quake-report-format-menu,
+      #report-format-menu {
+        max-width: min(280px, calc(100vw - 16px)) !important;
+        right: 0 !important;
+        left: auto !important;
+      }
     }
 
     @media (max-width: 420px) {
@@ -1259,14 +1299,14 @@
       #map-toolbar .mtb-tools { max-width: 48px; }
       #map-toolbar .mtb-tools-toggle,
       #map-toolbar .mtb-tools-panel button {
-        width: 36px; height: 36px;
+        width: 40px; height: 40px;
       }
       #map-toolbar .mtb-tools-panel {
-        max-height: calc(100% - 44px);
+        max-height: calc(100% - 48px);
         gap: 6px;
       }
       #map-toolbar .mtb-zoom button {
-        width: 36px; height: 32px;
+        width: 40px; height: 36px;
       }
     }
 
@@ -1674,34 +1714,7 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
       <div id="temp-panel" class="quakes-panel" style="display:none;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:3px;">
           <div class="quakes-panel-title" style="margin:0;">MAPA DE TEMPERATURA</div>
-          <div style="position:relative;display:inline-flex;align-items:center;">
-            <button type="button" id="btn-temp-map-report-menu" title="Generar reporte visual de temperatura" aria-haspopup="menu" aria-expanded="false" aria-controls="temperature-map-report-menu" style="font-size:0.62rem;font-weight:850;padding:0.34rem 0.55rem;background:#B4D445;color:#0d3d32;border:0;border-radius:7px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;">
-              REPORTE TEMP. <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 6 5 5 5-5"/></svg>
-            </button>
-            <div id="temperature-map-report-menu" role="menu" aria-labelledby="btn-temp-map-report-menu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:2600;min-width:272px;max-width:calc(100vw - 24px);padding:7px;background:#fff;border:1px solid #d8e4dd;border-radius:11px;box-shadow:0 10px 28px rgba(13,61,50,.22);">
-              <div style="padding:5px 9px 3px;font-size:0.58rem;font-weight:900;letter-spacing:.08em;color:#739083;">MUNICIPIO SIMÓN BOLÍVAR</div>
-              <button type="button" id="btn-temp-map-muni-pdf" role="menuitem" style="width:100%;display:flex;align-items:center;gap:9px;padding:9px 10px;background:#fff;border:0;border-radius:8px;color:#0d3d32;text-align:left;cursor:pointer;">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#2e746b" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5M9 14h6M9 17h4"/></svg>
-                <span style="font-size:0.68rem;font-weight:800;">Mapa municipal · PDF</span>
-              </button>
-              <button type="button" id="btn-temp-map-muni-png" role="menuitem" style="width:100%;display:flex;align-items:center;gap:9px;padding:9px 10px;background:#fff;border:0;border-radius:8px;color:#0d3d32;text-align:left;cursor:pointer;">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#a77c20" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-                <span style="font-size:0.68rem;font-weight:800;">Mapa municipal · PNG 4×</span>
-              </button>
-              <div style="height:1px;margin:5px 8px;background:#e8eee9;"></div>
-              <div style="padding:5px 9px 3px;font-size:0.58rem;font-weight:900;letter-spacing:.08em;color:#739083;">VENEZUELA</div>
-              <button type="button" id="btn-temp-map-venezuela-pdf" role="menuitem" style="width:100%;display:flex;align-items:center;gap:9px;padding:9px 10px;background:#fff;border:0;border-radius:8px;color:#0d3d32;text-align:left;cursor:pointer;">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#2e746b" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5M9 14h6M9 17h4"/></svg>
-                <span style="font-size:0.68rem;font-weight:800;">Mapa de Venezuela · PDF</span>
-              </button>
-              <button type="button" id="btn-temp-map-venezuela-png" role="menuitem" style="width:100%;display:flex;align-items:center;gap:9px;padding:9px 10px;background:#fff;border:0;border-radius:8px;color:#0d3d32;text-align:left;cursor:pointer;">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#a77c20" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
-                <span style="font-size:0.68rem;font-weight:800;">Mapa de Venezuela · PNG 4×</span>
-              </button>
-            </div>
-          </div>
         </div>
-        <div style="margin:2px 0 4px;color:#9fb3a8;font-size:0.6rem;line-height:1.35;">GENERA EL REPORTE DE TEMPERATURA DEL MUNICIPIO O DE VENEZUELA CON MAPA DE CALOR Y VALORES POR ZONA.</div>
       </div>
       <div class="rain-legend" id="rain-legend">
         <div style="font-weight:650;margin-bottom:2px;">RADAR DE PRECIPITACIÓN (INTENSIDAD)</div>
@@ -2156,9 +2169,12 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
 
   function reportCaptureScale(outputFormat) {
     var mobile = isMobileDevice();
-    /* En móvil siempre 1: evita createPattern / memoria en Android e iOS. */
-    if (mobile) return 1;
-    if (String(outputFormat).toLowerCase() === "png") return 2;
+    var isPng = String(outputFormat).toLowerCase() === "png";
+    /* PNG en calidad HD/Retina 4x en escritorio; en móvil se usa 2x como balance
+       entre nitidez y memoria (antes era 1x para móvil y 2x para PNG en PC,
+       por lo que los PNG salían por debajo del "máxima calidad" anunciado). */
+    if (mobile) return isPng ? 2 : 1;
+    if (isPng) return 4;
     return 2;
   }
 
@@ -2547,7 +2563,9 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
           try {
             var w = mapEl.offsetWidth;
             var h = mapEl.offsetHeight;
-            var scale = 2;
+            /* Calidad HD al aplanar mapas Leaflet para el PNG exportado; en móvil
+               se mantiene en 2× para no agotar memoria. */
+            var scale = isMobileDevice() ? 2 : 4;
             var canvas = document.createElement("canvas");
             canvas.width = Math.max(1, Math.round(w * scale));
             canvas.height = Math.max(1, Math.round(h * scale));
@@ -5826,6 +5844,21 @@ var ReportKit = (function () {
 
   window.addEventListener("resize", function () {
     if (document.body.classList.contains("obs-sidebar-open")) syncObsSidebarToMap();
+    try {
+      if (window.MapCtrl && MapCtrl.map) {
+        setTimeout(function () {
+          try { MapCtrl.map.invalidateSize({ pan: false }); } catch (e1) {}
+        }, 200);
+      }
+    } catch (eR) {}
+  });
+  window.addEventListener("orientationchange", function () {
+    setTimeout(function () {
+      if (document.body.classList.contains("obs-sidebar-open")) syncObsSidebarToMap();
+      try {
+        if (window.MapCtrl && MapCtrl.map) MapCtrl.map.invalidateSize({ pan: false });
+      } catch (eO) {}
+    }, 250);
   });
   window.addEventListener("scroll", function () {
     if (document.body.classList.contains("obs-sidebar-open")) syncObsSidebarToMap();
@@ -6431,10 +6464,17 @@ var ReportKit = (function () {
       self.map.on("zoomend", syncZoomUI);
       syncZoomUI();
 
+      /* Evitar que toques en la barra activen el mapa (móvil y escritorio). */
+      try {
+        L.DomEvent.disableClickPropagation(tb);
+        L.DomEvent.disableScrollPropagation(tb);
+      } catch (eDom) {}
       document.getElementById("mtb-zoom-in").onclick = function (e) {
+        e.preventDefault();
         e.stopPropagation(); self.map.zoomIn();
       };
       document.getElementById("mtb-zoom-out").onclick = function (e) {
+        e.preventDefault();
         e.stopPropagation(); self.map.zoomOut();
       };
       var toolsToggle = document.getElementById("mtb-tools-toggle");
@@ -6456,14 +6496,19 @@ var ReportKit = (function () {
           e.stopPropagation();
           setToolsOpen(!tb.classList.contains("mtb-open"));
         };
-        L.DomEvent.disableClickPropagation(toolsToggle);
+        try { L.DomEvent.disableClickPropagation(toolsToggle); } catch (eT) {}
       }
+      /* Estado inicial cerrado con icono SVG coherente (móvil). */
+      setToolsOpen(false);
       /* Cerrar herramientas al tocar el mapa (fuera del panel). */
       this.map.on("click", function () {
         if (tb && tb.classList.contains("mtb-open")) setToolsOpen(false);
       });
       document.getElementById("mtb-menu").onclick = function (e) {
+        e.preventDefault();
         e.stopPropagation();
+        /* En teléfono: cerrar el desplegable de iconos al abrir el panel lateral. */
+        if (tb && tb.classList.contains("mtb-open")) setToolsOpen(false);
         if (typeof toggleObsSidebar === "function") toggleObsSidebar();
       };
       document.getElementById("mtb-legend").onclick = function (e) {
@@ -11975,11 +12020,11 @@ var ReportKit = (function () {
           NRDesign.bg() +
           '<div style="padding:230px 48px 40px;position:relative;box-sizing:border-box;">' +
             '<div style="display:inline-block;color:#B4D445;font-size:16px;font-weight:800;letter-spacing:.10em;white-space:nowrap;">SIGP · OBSERVATORIO CLIMÁTICO</div>' +
-            '<div id="quake-flyer-logos" style="display:flex;position:absolute;left:48px;right:48px;top:34px;height:130px;align-items:center;justify-content:space-between;gap:10px;z-index:2;">' +
-              '<div style="margin-left:-30px;position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="Logo institucional izquierdo" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
-              '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="Logo institucional derecho" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+            '<div id="quake-flyer-logos" style="display:flex;position:absolute;left:54px;right:54px;top:30px;height:110px;align-items:center;justify-content:space-between;gap:10px;z-index:2;">' +
+              '<div style="margin-left:-30px;position:relative;flex:0 0 420px;width:420px;height:110px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="Logo institucional izquierdo" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+              '<div style="position:relative;flex:0 0 420px;width:420px;height:110px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="Logo institucional derecho" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
             '</div>' +
-            '<div style="position:absolute;top:196px;left:64px;right:64px;height:1px;background:linear-gradient(90deg,#B4D445,rgba(180,212,69,0));"></div>' +
+            '<div style="position:absolute;top:170px;left:68px;right:68px;height:1px;background:linear-gradient(90deg,#B4D445,rgba(180,212,69,0));"></div>' +
               '<div style="margin-top:28px;max-width:70%;position:relative;z-index:1;">' +
               '<div style="font-size:64px;font-weight:900;line-height:1.02;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.18);">REPORTE<br/>SÍSMICO</div>' +
               '<div style="margin-top:18px;font-size:28px;font-weight:500;color:rgba(255,255,255,.92);">' + eventWhenHTML + '</div>' +
@@ -12111,7 +12156,7 @@ var ReportKit = (function () {
             }
             quakeReportTiles = L.tileLayer(
               REPORT_SITE_BASEMAP,
-              { maxZoom: 19, crossOrigin: true, attribution: "© ESRI · DATOS OSM Y OTROS" }
+              { maxZoom: 19, crossOrigin: true, attribution: "© ESRI · DATOS OSM Y OTROS", detectRetina: true }
             );
             quakeReportTiles.once("load", function () { finish(true); });
             quakeReportTiles.once("tileerror", function () {
@@ -12211,7 +12256,7 @@ var ReportKit = (function () {
         return;
       }
 
-      var STORY_W = 1080, STORY_H = 1920, MAP_W = 950, MAP_H = mode === "municipio" ? 470 : 610;
+      var STORY_W = 1080, STORY_H = 1920, MAP_W = 950, MAP_H = mode === "municipio" ? 470 : 680;
       var reportNow = new Date();
       var dateParts = new Intl.DateTimeFormat("es-VE", {
         timeZone: "America/Caracas", year: "numeric", month: "2-digit", day: "2-digit"
@@ -12341,6 +12386,8 @@ var ReportKit = (function () {
         });
       }
 
+      /* Ciudades etiquetadas directamente SOBRE el mapa (las 6 ciudades más
+         representativas, para no saturar el visualizador). */
       var nationalZones = [
         { name: "MARACAIBO", lat: 10.63, lon: -71.64, dx: -62, dy: -48 },
         { name: "MÉRIDA", lat: 8.60, lon: -71.14, dx: -54, dy: 58 },
@@ -12348,6 +12395,95 @@ var ReportKit = (function () {
         { name: "CARACAS", lat: 10.49, lon: -66.88, dx: 58, dy: -54 },
         { name: "BARCELONA", lat: 10.14, lon: -64.69, dx: 64, dy: 42 },
         { name: "C. GUAYANA", lat: 8.37, lon: -62.64, dx: 50, dy: 58 }
+      ];
+      /* Regiones de Venezuela para el resumen (igual estructura que el reporte
+         de lluvia): 7 zonas con los estados que cubren y varios puntos de
+         muestreo para promediar T° y sensación. */
+      var tempRegions = [
+        {
+          name: "ZONA ORIENTE",
+          states: "Anzoátegui, Sucre, Monagas, Nueva Esparta",
+          points: [
+            { lat: 10.14, lon: -64.69 },
+            { lat: 10.45, lon: -64.17 },
+            { lat: 9.75, lon: -63.18 },
+            { lat: 11.03, lon: -63.86 },
+            { lat: 10.46, lon: -64.18 }
+          ]
+        },
+        {
+          name: "ZONA OCCIDENTE",
+          states: "Zulia, Falcón",
+          points: [
+            { lat: 10.63, lon: -71.64 },
+            { lat: 11.41, lon: -69.67 },
+            { lat: 10.97, lon: -71.75 }
+          ]
+        },
+        {
+          name: "CENTRO NORTE",
+          states: "Dtto. Capital, Miranda, Vargas, Aragua, Carabobo, Yaracuy",
+          points: [
+            { lat: 10.49, lon: -66.88 },
+            { lat: 10.34, lon: -67.04 },
+            { lat: 10.60, lon: -66.93 },
+            { lat: 10.25, lon: -67.60 },
+            { lat: 10.17, lon: -68.00 },
+            { lat: 10.34, lon: -68.74 }
+          ]
+        },
+        {
+          name: "CENTRO-OCCIDENTE",
+          states: "Lara, Portuguesa, Barinas",
+          points: [
+            { lat: 10.07, lon: -69.32 },
+            { lat: 9.05, lon: -69.75 },
+            { lat: 8.62, lon: -70.23 }
+          ]
+        },
+        {
+          name: "LOS ANDES",
+          states: "Mérida, Táchira, Trujillo",
+          points: [
+            { lat: 8.60, lon: -71.14 },
+            { lat: 7.77, lon: -72.23 },
+            { lat: 9.37, lon: -70.43 }
+          ]
+        },
+        {
+          name: "LOS LLANOS",
+          states: "Guárico, Apure, Cojedes",
+          points: [
+            { lat: 9.92, lon: -67.36 },
+            { lat: 7.89, lon: -67.47 },
+            { lat: 9.65, lon: -68.58 }
+          ]
+        },
+        {
+          name: "GUAYANA",
+          states: "Bolívar, Amazonas, Delta Amacuro",
+          points: [
+            { lat: 8.13, lon: -63.54 },
+            { lat: 8.37, lon: -62.64 },
+            { lat: 5.66, lon: -67.62 },
+            { lat: 9.06, lon: -62.05 }
+          ]
+        }
+      ];
+      /* Puntos de países vecinos para rellenar el calor alrededor (no salen en
+         la tabla, solo alimentan el degradado IDW en los bordes del mapa). */
+      var neighborCities = [
+        { lat: 4.71, lon: -74.07 }, /* Bogotá */
+        { lat: 6.25, lon: -75.58 }, /* Medellín */
+        { lat: 10.40, lon: -75.50 }, /* Cartagena */
+        { lat: 10.97, lon: -74.80 }, /* Barranquilla */
+        { lat: -0.23, lon: -78.51 }, /* Quito */
+        { lat: 8.98, lon: -79.52 }, /* Panamá */
+        { lat: 6.80, lon: -58.16 }, /* Georgetown */
+        { lat: 5.85, lon: -55.20 }, /* Paramaribo */
+        { lat: -3.10, lon: -60.02 }, /* Manaus */
+        { lat: 12.12, lon: -68.90 }, /* Willemstad */
+        { lat: 11.00, lon: -74.80 }  /* Mar Caribe */
       ];
       function findVenezuelaShape() {
         for (var i = 0; i < QUAKE_REPORT_MAP_SHAPES.length; i++) {
@@ -12382,17 +12518,27 @@ var ReportKit = (function () {
         if (!shape || !shape.polygons || !shape.polygons.length) return Promise.reject(new Error("No está disponible el contorno de Venezuela."));
         var countryBounds = boundsFromRings(shape.polygons);
         /* Vista regional semejante al mapa térmico de referencia: norte de Suramérica
-           completo, con Venezuela al centro y contexto cartográfico alrededor. */
-        var heatBounds = { minLon: -80.8, maxLon: -51.2, minLat: -4.3, maxLat: 14.7 };
-        var grid = [], step = 2.7;
-        for (var lat = heatBounds.minLat + 0.25; lat < heatBounds.maxLat; lat += step) {
-          for (var lon = heatBounds.minLon + 0.25; lon < heatBounds.maxLon; lon += step) {
+           completo con el mar Caribe, Colombia, Panamá, Guyanas, Ecuador norte y
+           Brasil norte, de modo que el calor se vea en TODO el recorte visible. */
+        /* Recorte igual al del reporte de lluvia: Venezuela completa con margen
+           suficiente para que el color rebase los bordes y se vea en toda la
+           imagen sin cortes. */
+        var heatBounds = { minLon: -77.5, maxLon: -56.5, minLat: -0.5, maxLat: 14.5 };
+        var grid = [], step = 1.7;
+        for (var lat = heatBounds.minLat + 0.3; lat < heatBounds.maxLat; lat += step) {
+          for (var lon = heatBounds.minLon + 0.3; lon < heatBounds.maxLon; lon += step) {
             grid.push({ lat: lat, lon: lon, kind: "grid" });
           }
         }
-        var points = grid.concat(nationalZones.map(function (zone) {
-          return { lat: zone.lat, lon: zone.lon, kind: "zone" };
-        }));
+        var mapLabelsList = nationalZones.slice();
+        /* Puntos planos: rejilla + etiquetas de mapa + puntos de cada región + vecinos. */
+        var regionPoints = [];
+        tempRegions.forEach(function (reg) {
+          (reg.points || []).forEach(function (p) { regionPoints.push({ lat: p.lat, lon: p.lon }); });
+        });
+        var neighborPoints = neighborCities.map(function (c) { return { lat: c.lat, lon: c.lon }; });
+        var allCityPoints = mapLabelsList.concat(regionPoints, neighborPoints);
+        var points = grid.concat(allCityPoints);
         return API.multiTemp(points).then(function (raw) {
           var arr = Array.isArray(raw) ? raw : (raw ? [raw] : []);
           var samples = [];
@@ -12402,7 +12548,8 @@ var ReportKit = (function () {
               samples.push({ lat: grid[i].lat, lon: grid[i].lon, temp: Number(current.temperature_2m) });
             }
           }
-          var zones = nationalZones.map(function (zone, index) {
+          /* Etiquetas sobre el mapa (las 6 ciudades clave). */
+          var zones = mapLabelsList.map(function (zone, index) {
             var current = arr[grid.length + index] && arr[grid.length + index].current
               ? arr[grid.length + index].current : null;
             return {
@@ -12413,11 +12560,41 @@ var ReportKit = (function () {
                 ? Number(current.apparent_temperature) : null
             };
           });
+          /* Filas de resumen POR REGIÓN (promedio de sus puntos). */
+          var regionRows = [];
+          var offset = grid.length + mapLabelsList.length;
+          tempRegions.forEach(function (reg, ri) {
+            var tVals = [], fVals = [];
+            for (var k = 0; k < reg.points.length; k++) {
+              var cur = arr[offset + k] && arr[offset + k].current ? arr[offset + k].current : null;
+              if (cur && cur.temperature_2m != null && isFinite(Number(cur.temperature_2m)))
+                tVals.push(Number(cur.temperature_2m));
+              if (cur && cur.apparent_temperature != null && isFinite(Number(cur.apparent_temperature)))
+                fVals.push(Number(cur.apparent_temperature));
+            }
+            offset += reg.points.length;
+            var avgT = tVals.length ? tVals.reduce(function (a,b){return a+b;},0)/tVals.length : null;
+            var avgF = fVals.length ? fVals.reduce(function (a,b){return a+b;},0)/fVals.length : null;
+            regionRows.push({ name: reg.name, states: reg.states, temp: avgT, feel: avgF });
+            /* También alimentamos el raster con el promedio regional. */
+            if (avgT != null) {
+              var center = reg.points[0];
+              samples.push({ lat: center.lat, lon: center.lon, temp: avgT });
+            }
+          });
+          /* Vecinos al IDW. */
+          for (var n = 0; n < neighborCities.length; n++) {
+            var nc = neighborCities[n];
+            var cn = arr[offset + n] && arr[offset + n].current ? arr[offset + n].current : null;
+            if (cn && cn.temperature_2m != null && isFinite(Number(cn.temperature_2m))) {
+              samples.push({ lat: nc.lat, lon: nc.lon, temp: Number(cn.temperature_2m) });
+            }
+          }
           zones.forEach(function (zone) {
             if (zone.temp != null) samples.push({ lat: zone.lat, lon: zone.lon, temp: zone.temp });
           });
-          if (!samples.length) throw new Error("Open-Meteo no devolvió temperaturas para Venezuela.");
-          return { shape: shape, bounds: countryBounds, mapBounds: heatBounds, samples: samples, zones: zones };
+          if (!samples.length) throw new Error("Open-Meteo no devolvió temperaturas para la región.");
+          return { shape: shape, bounds: countryBounds, mapBounds: heatBounds, samples: samples, zones: zones, mapLabels: zones, regionRows: regionRows };
         });
       }
 
@@ -12505,20 +12682,19 @@ var ReportKit = (function () {
       }
 
       function makeVenezuelaMap(data) {
-        /* Fallback SVG: calor solo en Venezuela+Esequibo (un solo país) y contorno negro único. */
-        var mapBounds = data.mapBounds || {
-          minLon: data.bounds.minLon - (data.bounds.maxLon - data.bounds.minLon) * 0.10,
-          maxLon: data.bounds.maxLon + (data.bounds.maxLon - data.bounds.minLon) * 0.10,
-          minLat: data.bounds.minLat - (data.bounds.maxLat - data.bounds.minLat) * 0.10,
-          maxLat: data.bounds.maxLat + (data.bounds.maxLat - data.bounds.minLat) * 0.10
-        };
+        /* Mapa de calor regional: el recorte coincide con la vista del mapa Leaflet
+           (norte de Suramérica completo y mar Caribe) para que el calor cubra toda
+           la imagen y no se vean zonas en blanco alrededor. */
+        var mapBounds = data.mapBounds || { minLon: -77.5, maxLon: -56.5, minLat: -0.5, maxLat: 14.5 };
         var projection = createProjection(mapBounds, MAP_W, MAP_H, 12);
         var backgroundSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="' + MAP_W + '" height="' + MAP_H + '" viewBox="0 0 ' + MAP_W + ' ' + MAP_H + '" preserveAspectRatio="none" aria-hidden="true" style="position:absolute;left:0;top:0;width:100%;height:100%;display:block;z-index:0;"><rect width="' + MAP_W + '" height="' + MAP_H + '" fill="#eaf3f6"/></svg>';
         var projectionLabels = "";
-        data.zones.forEach(function (zone) {
+        (data.mapLabels || data.zones || []).forEach(function (zone) {
+          var t = zone.temp != null ? zone.temp : zone.temp;
+          var f = zone.feel != null ? zone.feel : zone.feel;
           var point = projection.project(zone.lon, zone.lat);
-          var stPart = zone.feel != null ? " ST" + degrees(zone.feel) : "";
-          var labelText = esc(zone.name) + " T " + degrees(zone.temp) + stPart;
+          var stPart = f != null ? " ST" + degrees(f) : "";
+          var labelText = esc(zone.name) + " T " + degrees(t) + stPart;
           var x = Math.max(8, Math.min(MAP_W - 8, point.x + (zone.dx || 0) * 0.35));
           var y = Math.max(14, Math.min(MAP_H - 8, point.y + (zone.dy || 0) * 0.35));
           projectionLabels +=
@@ -12550,7 +12726,9 @@ var ReportKit = (function () {
         var names = ALL_PARISH_NAMES.filter(function (name) { return !!PARISH_POLYGONS[name]; });
         var rings = names.map(function (name) { return PARISH_POLYGONS[name].ring; });
         var bounds = boundsFromRings(rings);
-        var width = 900, height = rasterAspectHeight(width, bounds);
+        /* Raster HD: ancho mayor para que el degradado térmico no se vea borroso
+           al exportar el PNG en 4×. */
+        var width = 1800, height = rasterAspectHeight(width, bounds);
         var canvas = document.createElement("canvas");
         canvas.width = width; canvas.height = height;
         var ctx = canvas.getContext("2d");
@@ -12593,42 +12771,68 @@ var ReportKit = (function () {
         return { src: canvas.toDataURL("image/png"), bounds: bounds };
       }
       function makeNationalHeatImage(data, bounds) {
-        var width = 900, height = rasterAspectHeight(width, bounds);
-        var canvas = document.createElement("canvas");
-        canvas.width = width; canvas.height = height;
-        var ctx = canvas.getContext("2d");
-        var image = ctx.createImageData(width, height);
+        /* Raster HD para el mapa regional de temperatura: cubre TODA la vista
+           (Venezuela, Colombia, Panamá, Guyanas, Ecuador norte, Brasil norte y
+           el mar Caribe adyacente) para que el calor se vea en toda la imagen,
+           no solo dentro del contorno de Venezuela. Se rasteriza en resolución
+           media y luego se amplía suavemente para evitar que el bucle anidado
+           de 1000M+ iteraciones congele el navegador. */
+        var hiWidth = 2200;
+        var loWidth = 1100;
+        var height = rasterAspectHeight(hiWidth, bounds);
+        var loHeight = Math.max(1, Math.round(height * (loWidth / hiWidth)));
+        var loCanvas = document.createElement("canvas");
+        loCanvas.width = loWidth; loCanvas.height = loHeight;
+        var loCtx = loCanvas.getContext("2d");
+        var image = loCtx.createImageData(loWidth, loHeight);
         var northY = mercatorY(bounds.maxLat), southY = mercatorY(bounds.minLat);
         var spanLon = bounds.maxLon - bounds.minLon;
-        var samples = data.samples || [], sigma2 = 2 * 95 * 95;
-        /* Calor en Venezuela + Esequibo (sin dibujar límites). */
-        var maskRings = getVenezuelaRings().concat(getEsequiboRings());
-        for (var py = 0; py < height; py++) {
-          var mercY = northY - (py + 0.5) / height * (northY - southY);
+        var samples = data.samples || [], sigma2 = 2 * 110 * 110;
+        var radius2 = sigma2 * 4.5; /* exp(-4.5) ≈ 0.011: cortar contribuciones lejanas */
+        /* Índice espacial simple (bucket por latitud) para acelerar el IDW. */
+        var buckets = {};
+        for (var bi = 0; bi < samples.length; bi++) {
+          var bKey = Math.round(samples[bi].lat * 2);
+          (buckets[bKey] = buckets[bKey] || []).push(samples[bi]);
+        }
+        for (var py = 0; py < loHeight; py++) {
+          var mercY = northY - (py + 0.5) / loHeight * (northY - southY);
           var lat = latitudeFromMercatorY(mercY);
-          for (var px = 0; px < width; px++) {
-            var lon = bounds.minLon + (px + 0.5) / width * spanLon;
-            if (maskRings.length && !pointInAnyRing(lon, lat, maskRings)) continue;
+          var latCenterKey = Math.round(lat * 2);
+          var cosLat = Math.cos(lat * Math.PI / 180);
+          for (var px = 0; px < loWidth; px++) {
+            var lon = bounds.minLon + (px + 0.5) / loWidth * spanLon;
             var weighted = 0, totalWeight = 0;
-            for (var i = 0; i < samples.length; i++) {
-              var dLat = (lat - samples[i].lat) * 111.32;
-              var dLon = (lon - samples[i].lon) * 111.32 * Math.cos(((lat + samples[i].lat) / 2) * Math.PI / 180);
-              var d2 = dLat * dLat + dLon * dLon;
-              var weight = Math.exp(-d2 / sigma2);
-              weighted += Number(samples[i].temp) * weight;
-              totalWeight += weight;
+            for (var bk = latCenterKey - 4; bk <= latCenterKey + 4; bk++) {
+              var bucket = buckets[bk];
+              if (!bucket) continue;
+              for (var i = 0; i < bucket.length; i++) {
+                var s = bucket[i];
+                var dLat = (lat - s.lat) * 111.32;
+                var dLon = (lon - s.lon) * 111.32 * cosLat;
+                var d2 = dLat * dLat + dLon * dLon;
+                if (d2 > radius2) continue;
+                var weight = Math.exp(-d2 / sigma2);
+                weighted += Number(s.temp) * weight;
+                totalWeight += weight;
+              }
             }
             if (!totalWeight) continue;
             var temp = weighted / totalWeight;
-            var rgb = MapCtrl.tempRGBFor(temp);
-            var offset = (py * width + px) * 4;
-            /* Textura de campo térmico */
-            temp += Math.sin(lon * 40) * Math.cos(lat * 55) * 0.45;
-            rgb = MapCtrl.tempRGBFor(temp);
-            image.data[offset] = rgb[0]; image.data[offset + 1] = rgb[1]; image.data[offset + 2] = rgb[2]; image.data[offset + 3] = 175;
+            var offset = (py * loWidth + px) * 4;
+            var txt = temp + Math.sin(lon * 40) * Math.cos(lat * 55) * 0.35;
+            var rgb = MapCtrl.tempRGBFor(txt);
+            image.data[offset] = rgb[0]; image.data[offset + 1] = rgb[1]; image.data[offset + 2] = rgb[2]; image.data[offset + 3] = 205;
           }
         }
-        ctx.putImageData(image, 0, 0);
+        loCtx.putImageData(image, 0, 0);
+        /* Escalado suave al tamaño HD final usando el navegador (bicúbico). */
+        var canvas = document.createElement("canvas");
+        canvas.width = hiWidth; canvas.height = height;
+        var ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+        ctx.drawImage(loCanvas, 0, 0, hiWidth, height);
         return canvas.toDataURL("image/png");
       }
       function addReportMapLabel(lat, lon, html, size, anchor, zIndexOffset) {
@@ -12684,7 +12888,8 @@ var ReportKit = (function () {
             var rowsByName = {};
             (data.parishes || []).forEach(function (row) { rowsByName[row.name] = row; });
 
-            var pcW = 1600;
+            /* Canvas de parroquias en resolución HD para exportar PNG 4× sin pixelado. */
+            var pcW = 2800;
             var spanLon = viewBounds.maxLon - viewBounds.minLon;
             var spanLat = viewBounds.maxLat - viewBounds.minLat;
             var pcH = Math.max(1, Math.round(pcW * spanLat / Math.max(spanLon, 1e-9)));
@@ -12809,14 +13014,16 @@ var ReportKit = (function () {
             });
           
 } else {
-            var regionalBounds = data.mapBounds || { minLon: -80.8, maxLon: -51.2, minLat: -4.3, maxLat: 14.7 };
+            var regionalBounds = data.mapBounds || { minLon: -77.5, maxLon: -56.5, minLat: -0.5, maxLat: 14.5 };
             fitBounds = [[regionalBounds.minLat, regionalBounds.minLon], [regionalBounds.maxLat, regionalBounds.maxLon]];
-            reportMap.fitBounds(fitBounds, { padding: [8, 8], animate: false });
+            reportMap.fitBounds(fitBounds, { padding: [0, 0], animate: false });
             L.imageOverlay(makeNationalHeatImage(data, regionalBounds), fitBounds, {
-              pane: "temperatureReportHeatPane", opacity: 0.72, interactive: false
+              pane: "temperatureReportHeatPane", opacity: 0.88, interactive: false
             }).addTo(reportMap);
-            /* Sin líneas de límite: solo mapa de calor continuo (Venezuela + Esequibo). */
-            (data.zones || []).forEach(function (zone) {
+            /* Calor continuo en TODA la vista regional (no solo Venezuela).
+               Solo se etiquetan las ciudades venezolanas clave sobre el mapa;
+               la lista completa de estados se muestra en la tabla inferior. */
+            (data.mapLabels || []).forEach(function (zone) {
               if (zone.temp == null) return;
               var stPart = zone.feel != null ? " ST" + degrees(zone.feel) : "";
               var labelHtml = '<div style="width:130px;font:800 9px/1.15 Arial,sans-serif;letter-spacing:.1px;text-align:center;white-space:nowrap;color:#fff;text-shadow:-1px -1px 2px #000,1px -1px 2px #000,-1px 1px 2px #000,1px 1px 2px #000,0 0 3px #000,0 0 5px #000;">' +
@@ -12850,7 +13057,7 @@ var ReportKit = (function () {
               : REPORT_SITE_BASEMAP_ATTR;
             var tiles = L.tileLayer(
               basemapUrl,
-              { maxZoom: 19, crossOrigin: true, attribution: basemapAttr }
+              { maxZoom: 19, crossOrigin: true, attribution: basemapAttr, detectRetina: true }
             );
             tiles.on("tileload", function () { successfulTiles++; });
             tiles.once("load", function () { finish(successfulTiles > 0); });
@@ -12866,6 +13073,49 @@ var ReportKit = (function () {
         }
       }
 
+      function tempTone(temp) {
+        if (temp == null || !isFinite(Number(temp))) return "#94a3b8";
+        var t = Number(temp);
+        if (t < 20) return "#60a5fa";
+        if (t < 24) return "#22c55e";
+        if (t < 27) return "#eab308";
+        if (t < 30) return "#f97316";
+        if (t < 33) return "#ef4444";
+        return "#b91c1c";
+      }
+      /* Tabla compacta por REGIONES, igual estilo que el reporte de lluvia. */
+      function makeRegionSummary(rows) {
+        var list = (rows || []).slice();
+        var html = list.map(function (z) {
+          var tone = tempTone(z.temp);
+          var tStr = z.temp != null ? degrees(z.temp) : "—";
+          var fStr = z.feel != null ? degrees(z.feel) : "—";
+          var statesHtml = z.states
+            ? '<div style="font-size:11px;font-weight:650;color:#9fc2ad;margin-top:3px;letter-spacing:.02em;">' + esc(z.states.toUpperCase()) + '</div>'
+            : "";
+          return '<tr>' +
+            '<td style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.14);vertical-align:top;">' +
+              '<div style="font-weight:900;color:#ffffff;font-size:14px;letter-spacing:.04em;">' + esc(z.name) + '</div>' +
+              statesHtml +
+            '</td>' +
+            '<td style="padding:8px 12px;text-align:center;font-weight:900;color:#ffffff;border-bottom:1px solid rgba(255,255,255,.14);vertical-align:middle;width:90px;">' +
+              '<div style="display:inline-flex;align-items:center;justify-content:center;min-width:64px;padding:6px 10px;border-radius:8px;background:' + tone + ';box-shadow:inset 0 -2px 0 rgba(0,0,0,.18);font-size:16px;">' + tStr + '</div>' +
+            '</td>' +
+            '<td style="padding:8px 12px;text-align:right;font-weight:900;color:#fff;border-bottom:1px solid rgba(255,255,255,.14);vertical-align:middle;width:92px;">' + fStr + '</td>' +
+            '</tr>';
+        }).join("");
+        return '<div style="margin:16px 0 0;">' +
+          '<table style="width:100%;border-collapse:collapse;font-size:14px;">' +
+          '<thead><tr>' +
+            '<th style="text-align:left;padding:7px 12px;font-size:11px;letter-spacing:.08em;color:#9fc2ad;font-weight:800;">ZONA (ESTADOS)</th>' +
+            '<th style="text-align:center;padding:7px 12px;font-size:11px;letter-spacing:.08em;color:#9fc2ad;font-weight:800;">T°</th>' +
+            '<th style="text-align:right;padding:7px 12px;font-size:11px;letter-spacing:.08em;color:#9fc2ad;font-weight:800;">SENSACIÓN</th>' +
+          '</tr></thead><tbody>' + html + '</tbody></table>' +
+          '<div style="margin:8px 4px 0;font:700 10px/1.35 Arial,sans-serif;color:#7fa594;letter-spacing:.02em;">' +
+            'T° = TEMPERATURA DEL AIRE (PROMEDIO DE LA ZONA) · ST = SENSACIÓN TÉRMICA · UNIDAD: °C.' +
+          '</div>' +
+        '</div>';
+      }
       function makeLegend() {
         return '<div style="margin:15px 4px 0;">' +
           '<div style="font-size:13px;font-weight:900;letter-spacing:.05em;color:#9fc2ad;margin-bottom:5px;">TEMPERATURA ACTUAL (°C)</div>' +
@@ -12873,34 +13123,36 @@ var ReportKit = (function () {
           '<div style="display:flex;justify-content:space-between;margin-top:3px;font-size:12px;font-weight:800;color:#9fc2ad;"><span>14°</span><span>18°</span><span>22°</span><span>26°</span><span>30°</span><span>34°+</span></div>' +
           '</div>';
       }
-      function buildReport(mapMarkup) {
+      function buildReport(mapMarkup, data) {
+        var isVenezuela = mode !== "municipio";
         var localTitle = mode === "municipio" ? "TEMPERATURA POR PARROQUIA" : "TEMPERATURA POR ZONAS · VENEZUELA";
         var mapSubtitle = mode === "municipio"
           ? "PROMEDIO ACTUAL · T° Y SENSACIÓN EN 6 PARROQUIAS"
-          : "MAPA DE CALOR · VALORES ACTUALES DE ZONAS REPRESENTATIVAS";
+          : "MAPA DE CALOR · T° Y SENSACIÓN PROMEDIO POR REGIÓN";
         var note = mode === "municipio"
           ? "T° · TEMPERATURA ACTUAL   ·   ST · SENSACIÓN TÉRMICA"
-          : "VALORES POR ZONA · COLORES SEGÚN LA ESCALA DEL VISUALIZADOR SIGP";
+          : "DEGRADADO TÉRMICO SOBRE VENEZUELA · VALORES POR REGIÓN";
+        var regionTableHtml = isVenezuela ? makeRegionSummary((data && data.regionRows) || []) : "";
         var logos =
-          '<div id="temperature-map-report-logos" style="display:flex;position:absolute;left:48px;right:48px;top:34px;height:130px;align-items:center;justify-content:space-between;gap:10px;z-index:2;">' +
-            '<div style="margin-left:-30px;position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="Logo institucional izquierdo" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
-            '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="Logo institucional derecho" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+          '<div id="temperature-map-report-logos" style="display:flex;position:absolute;left:54px;right:54px;top:30px;height:110px;align-items:center;justify-content:space-between;gap:10px;z-index:2;">' +
+            '<div style="margin-left:-30px;position:relative;flex:0 0 420px;width:420px;height:110px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="Logo institucional izquierdo" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+            '<div style="position:relative;flex:0 0 420px;width:420px;height:110px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="Logo institucional derecho" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
           '</div>';
         wrap.innerHTML =
           '<div id="temperature-map-report-card" style="width:' + STORY_W + 'px;height:' + STORY_H + 'px;box-sizing:border-box;font-family:\'Segoe UI\',system-ui,-apple-system,sans-serif;margin:0;padding:0;background:#0b2e26;position:relative;overflow:hidden;color:#ffffff;position:relative;">' +
             NRDesign.bg() +
-          '<div style="padding:230px 48px 34px;position:relative;box-sizing:border-box;">' +
+          '<div style="padding:200px 48px 24px;position:relative;box-sizing:border-box;">' +
               '<div style="display:inline-block;color:#B4D445;font-size:16px;font-weight:800;letter-spacing:.10em;white-space:nowrap;">SIGP · OBSERVATORIO CLIMÁTICO</div>' +
               logos +
               '<div style="position:absolute;top:196px;left:64px;right:64px;height:1px;background:linear-gradient(90deg,#B4D445,rgba(180,212,69,0));"></div>' +
-              '<div style="margin-top:28px;max-width:78%;position:relative;z-index:1;">' +
-                '<div style="font-size:62px;font-weight:900;line-height:1.02;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.18);">REPORTE VISUAL<br/>DE TEMPERATURA</div>' +
+              '<div style="margin-top:20px;max-width:78%;position:relative;z-index:1;">' +
+                '<div style="font-size:54px;font-weight:900;line-height:1.02;color:#fff;text-shadow:0 4px 18px rgba(0,0,0,.18);">REPORTE VISUAL<br/>DE TEMPERATURA</div>' +
                 '<div style="margin-top:17px;font-size:20px;font-weight:550;color:rgba(255,255,255,.93);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc((dateLabel + " · " + timeLabel + " · HORA DE VENEZUELA").toUpperCase()) + '</div>' +
-                (mode === "municipio" ? ('<div style="margin-top:8px;font-size:22px;font-weight:850;color:#B4D445;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(placeLabel) + '</div>') : '') +
+                ('<div style="margin-top:8px;font-size:22px;font-weight:850;color:#B4D445;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(placeLabel) + '</div>') +
               '</div>' +
             '</div>' +
-            '<div style="position:relative;z-index:1;padding:6px 44px 28px;box-sizing:border-box;">' +
-              '<div style="background:rgba(8,31,26,.80);border:1px solid rgba(255,255,255,.14);border-radius:28px;padding:22px 22px 20px;margin-bottom:15px;box-shadow:0 10px 30px rgba(0,0,0,.25);">' +
+            '<div style="position:relative;z-index:1;padding:4px 44px 22px;box-sizing:border-box;">' +
+              '<div style="background:rgba(8,31,26,.80);border:1px solid rgba(255,255,255,.14);border-radius:24px;padding:18px 18px 16px;margin-bottom:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);">' +
                 '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:nowrap;margin:0 4px 13px;">' +
                   '<div style="min-width:0;flex:1;"><div style="font-size:24px;font-weight:900;color:#ffffff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + localTitle + '</div><div style="font-size:12px;font-weight:800;letter-spacing:.02em;color:#9fc2ad;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + mapSubtitle + '</div></div>' +
                   '<div style="font-size:12px;font-weight:900;color:#9fc2ad;background:rgba(180,212,69,.12);border:1px solid #d5e5c0;border-radius:999px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">ACTUALIZADO · ' + esc(timeLabel) + ' VET</div>' +
@@ -12911,7 +13163,8 @@ var ReportKit = (function () {
                   '<div style="position:absolute;right:7px;bottom:6px;z-index:800;padding:3px 6px;border-radius:4px;background:rgba(255,255,255,.82);font-size:10px;font-weight:650;color:#9fc2ad;">© ESRI · DATOS OSM Y OTROS</div>' +
                 '</div>' +
                 makeLegend() +
-                '<div style="margin:12px 4px 0;padding:9px 12px;background:rgba(255,255,255,.06);border-left:4px solid #d4a72c;border-radius:7px;font-size:12px;font-weight:750;letter-spacing:.02em;color:#9fc2ad;">' + note + '</div>' +
+                '<div style="margin:10px 4px 0;padding:7px 10px;background:rgba(255,255,255,.06);border-left:4px solid #d4a72c;border-radius:7px;font-size:11px;font-weight:750;letter-spacing:.02em;color:#9fc2ad;">' + note + '</div>' +
+                regionTableHtml +
               '</div>' +
               '<div style="text-align:center;margin-top:11px;font-size:13px;font-weight:850;letter-spacing:.04em;color:#9fc2ad;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">FUENTE: OPEN-METEO · VISUALIZADOR DE TEMPERATURA SIGP · ' + esc(dateLabel.toUpperCase()) + '</div>' +
             '</div>' +
@@ -12981,7 +13234,7 @@ var ReportKit = (function () {
         } else {
           mapMarkup = makeVenezuelaMap(data);
         }
-        buildReport(mapMarkup);
+        buildReport(mapMarkup, data);
         return prepareTemperatureReportMap(data).then(function () {
           return applyReportAssetsToCard(card, { includeBg: true });
         }).then(function () {
@@ -13201,9 +13454,9 @@ var ReportKit = (function () {
 
       function buildReport(data) {
         var logos =
-          '<div id="rain-map-report-logos" style="display:flex;position:absolute;left:48px;right:48px;top:34px;height:130px;align-items:center;justify-content:space-between;gap:10px;z-index:2;">' +
-            '<div style="margin-left:-30px;position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
-            '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+          '<div id="rain-map-report-logos" style="display:flex;position:absolute;left:54px;right:54px;top:30px;height:110px;align-items:center;justify-content:space-between;gap:10px;z-index:2;">' +
+            '<div style="margin-left:-30px;position:relative;flex:0 0 420px;width:420px;height:110px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
+            '<div style="position:relative;flex:0 0 420px;width:420px;height:110px;display:flex;align-items:center;justify-content:center;overflow:visible;"><img data-report-asset="logo" alt="" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" onload="this.style.display=\'block\';this.parentNode.parentNode.style.display=\'flex\';" onerror="this.style.display=\'none\';this.parentNode.style.display=\'none\';" /></div>' +
           '</div>';
         var legend =
           '<div style="margin:14px 4px 0;">' +
@@ -13292,7 +13545,7 @@ var ReportKit = (function () {
                 }
                 var base = L.tileLayer(
                   REPORT_SITE_BASEMAP,
-                  { maxZoom: 19, crossOrigin: true, attribution: "© ESRI · DATOS OSM Y OTROS" }
+                  { maxZoom: 19, crossOrigin: true, attribution: "© ESRI · DATOS OSM Y OTROS", detectRetina: true }
                 );
                 base.on("tileload", function () { successfulTiles++; });
                 base.once("load", function () {
@@ -13907,10 +14160,10 @@ var ReportKit = (function () {
         '<div style="position:absolute;left:64px;right:64px;top:0;bottom:0;">' +
 
         /* Logos */
-        '<div id="flyer-logos" style="display:flex;position:absolute;left:-16px;right:-16px;top:34px;height:130px;align-items:center;justify-content:space-between;z-index:2;">' +
-        '<div style="position:relative;margin-left:-30px;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
+        '<div id="flyer-logos" style="display:flex;position:absolute;left:-16px;right:-16px;top:30px;height:110px;align-items:center;justify-content:space-between;z-index:2;">' +
+        '<div style="position:relative;margin-left:-30px;flex:0 0 420px;width:420px;height:110px;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
         '<img data-report-asset="logo" alt="Logo institucional izquierdo" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" /></div>' +
-        '<div style="position:relative;flex:0 0 460px;width:460px;height:130px;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
+        '<div style="position:relative;flex:0 0 420px;width:420px;height:110px;display:flex;align-items:center;justify-content:center;overflow:visible;">' +
         '<img data-report-asset="logo" alt="Logo institucional derecho" style="display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:100%;height:auto;max-width:none;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.72));" /></div></div>' +
 
         /* Título */
@@ -13922,12 +14175,13 @@ var ReportKit = (function () {
         '<div style="font-size:20px;color:#B4D445;font-weight:700;letter-spacing:.03em;white-space:nowrap;text-align:right;flex-shrink:0;">' + String(place).toUpperCase() + "</div></div>" +
 
         /* Pronóstico */
-        '<div style="position:absolute;top:600px;left:0;right:0;height:290px;border:1px solid rgba(180,212,69,.35);border-radius:28px;background:rgba(8,31,26,.72);padding:42px 46px;display:flex;justify-content:space-between;">' +
-        '<div><div style="font-size:18px;letter-spacing:.24em;color:#B4D445;font-weight:700;">PRONÓSTICO HOY</div>' +
+        '<div style="position:absolute;top:600px;left:0;right:0;height:290px;border:1px solid rgba(180,212,69,.35);border-radius:28px;background:rgba(8,31,26,.72);padding:36px 46px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:28px;">' +
+        '<div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;">' +
+        '<div style="font-size:18px;letter-spacing:.24em;color:#B4D445;font-weight:700;line-height:1.2;">PRONÓSTICO HOY</div>' +
         '<div style="font-size:76px;font-weight:800;color:#fff;margin-top:14px;line-height:1;">' + cond + "</div>" +
-        '<div style="margin-top:26px;font-size:26px;color:#cfe3d6;">Sensación <b style="color:#f5b24a;">' +
+        '<div style="margin-top:32px;font-size:26px;color:#cfe3d6;">Sensación <b style="color:#f5b24a;">' +
         (feelsMax != null ? feelsMax + "°C" : "--") + " / " + (feelsMin != null ? feelsMin + "°C" : "--") + "</b></div></div>" +
-        '<div style="text-align:right;"><div style="font-size:150px;font-weight:800;line-height:.9;color:#fff;letter-spacing:-.03em;">' +
+        '<div style="flex:0 0 40%;min-width:0;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;transform:translateX(64px);"><div style="font-size:150px;font-weight:800;line-height:.9;color:#fff;letter-spacing:-.03em;">' +
         (maxT != null ? maxT : "--") + '<sup style="font-size:60px;vertical-align:top;position:relative;top:14px;">°</sup></div>' +
         '<div style="margin-top:18px;font-size:34px;color:#9fd0b5;font-weight:600;">Mín <span style="color:#6fb3ff;">' + minStr + "</span></div></div></div>" +
 
@@ -13937,6 +14191,11 @@ var ReportKit = (function () {
         nrMet(NR_ICON.sun, "Índice UV", nrUv, "radiación") +
         nrMet(NR_ICON.wind, "Sensación", (feelsMax != null ? feelsMax : "--") + "°", "máxima") +
         nrMet(NR_ICON.cloud, "Mínima", minStr, "temperatura") + "</div>" +
+
+        /* Amanecer y atardecer: ubicados debajo de las métricas, no al final del flyer. */
+        '<div style="position:absolute;top:1080px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;font-size:20px;color:#cfe3d6;white-space:nowrap;gap:16px;padding:14px 22px;border:1px solid rgba(180,212,69,.30);border-radius:16px;background:rgba(8,31,26,.78);box-sizing:border-box;">' +
+        '<div style="display:flex;align-items:center;gap:9px;white-space:nowrap;">' + NR_LINE(NR_ICON.sunrise) + '<span>Amanecer</span><b style="color:#fff;margin-left:4px;">' + sunR + "</b></div>" +
+        '<div style="display:flex;align-items:center;gap:9px;white-space:nowrap;">' + NR_LINE(NR_ICON.sunset) + '<span>Atardecer</span><b style="color:#fff;margin-left:4px;">' + sunS + "</b></div></div>" +
 
         /* Horarios */
         '<div style="position:absolute;top:1160px;left:0;right:0;font-size:18px;letter-spacing:.24em;color:#B4D445;font-weight:700;">DESGLOSE POR HORARIO</div>' +
@@ -13953,11 +14212,6 @@ var ReportKit = (function () {
         '<div style="position:absolute;top:1670px;left:0;right:0;border:1px solid rgba(255,255,255,.14);border-left:4px solid #B4D445;padding:16px 20px 18px 22px;background:rgba(8,31,26,.80);border-radius:16px;">' +
         '<div style="font-size:18px;letter-spacing:.2em;color:#B4D445;font-weight:700;">RESUMEN</div>' +
         '<div style="font-size:22px;line-height:1.4;color:#e8f3ec;margin-top:8px;">' + resumen + "</div></div>" +
-
-        /* Sol */
-        '<div style="position:absolute;top:1866px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;font-size:20px;color:#cfe3d6;white-space:nowrap;gap:16px;">' +
-        '<div style="white-space:nowrap;">Amanecer <b style="color:#fff;margin-left:8px;">' + sunR + "</b></div>" +
-        '<div style="white-space:nowrap;">Atardecer <b style="color:#fff;margin-left:8px;">' + sunS + "</b></div></div>" +
 
         "</div></div>";
 
@@ -14110,5 +14364,5 @@ var ReportKit = (function () {
   });
 })();
   </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a498cb578edc7429',t:'MTc5MTgzNjMxMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a498db93e834b773',t:'MTc5MTgzNjk3Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4990f00ed93c717',t:'MTc5MTgzOTA4Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4c44549794534f9',t:'MTc5MjI5MjE5NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a498cb578edc7429',t:'MTc5MTgzNjMxMg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a498db93e834b773',t:'MTc5MTgzNjk3Nw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4990f00ed93c717',t:'MTc5MTgzOTA4Mw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4c44549794534f9',t:'MTc5MjI5MjE5NA=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a52528e059b23715',t:'MTc5MzMwODE0OQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a52528e059b23715',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
