@@ -2170,12 +2170,12 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
   function reportCaptureScale(outputFormat) {
     var mobile = isMobileDevice();
     var isPng = String(outputFormat).toLowerCase() === "png";
-    /* PNG en calidad HD/Retina 4x en escritorio; en móvil se usa 2x como balance
-       entre nitidez y memoria (antes era 1x para móvil y 2x para PNG en PC,
-       por lo que los PNG salían por debajo del "máxima calidad" anunciado). */
-    if (mobile) return isPng ? 2 : 1;
-    if (isPng) return 4;
-    return 2;
+    /* PNG HD real:
+       - Escritorio: 4× → 1080×1920 pasa a 4320×7680 (calidad máxima).
+       - Móvil: 3× → balance nitidez/memoria (antes se forzaba 1× en captura).
+       PDF: 2× basta para impresión nítida sin archivos enormes. */
+    if (isPng) return mobile ? 3 : 4;
+    return mobile ? 1.5 : 2;
   }
 
   function reportErrorDetails(error) {
@@ -2563,9 +2563,8 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
           try {
             var w = mapEl.offsetWidth;
             var h = mapEl.offsetHeight;
-            /* Calidad HD al aplanar mapas Leaflet para el PNG exportado; en móvil
-               se mantiene en 2× para no agotar memoria. */
-            var scale = isMobileDevice() ? 2 : 4;
+            /* Calidad HD al aplanar mapas Leaflet para el PNG exportado. */
+            var scale = isMobileDevice() ? 3 : 4;
             var canvas = document.createElement("canvas");
             canvas.width = Math.max(1, Math.round(w * scale));
             canvas.height = Math.max(1, Math.round(h * scale));
@@ -2651,7 +2650,11 @@ window.WAVE_ARCHIVE_SNAPSHOT = [{"f": 1788998400000, "l": 1788998400000, "p": 20
       return Promise.reject(new Error("html2canvas no disponible"));
     }
     var mobile = isMobileDevice();
-    scale = mobile ? 1 : Math.min(Number(scale) || 1.5, 2);
+    /* Respetar la escala HD pedida (PNG 3×–4×). Solo se limita el techo por dispositivo. */
+    scale = Number(scale);
+    if (!isFinite(scale) || scale < 1) scale = mobile ? 2 : 2;
+    if (mobile) scale = Math.min(scale, 3);
+    else scale = Math.min(scale, 4);
 
     var host = card.parentNode;
     var prevHost = host ? { css: host.getAttribute("style") || "" } : null;
@@ -12196,7 +12199,7 @@ var ReportKit = (function () {
       function capturar() {
         return captureReportNode(card, captureScale).catch(function (e) {
           if (captureScale > 1) {
-            captureScale = captureScale > 1.5 ? 1.25 : 1;
+            captureScale = captureScale >= 3 ? 2.5 : (captureScale >= 2 ? 2 : (captureScale > 1.25 ? 1.25 : 1));
             console.warn("Reintento de captura con escala " + captureScale, e);
             return capturar();
           }
@@ -13194,7 +13197,7 @@ var ReportKit = (function () {
       function capture() {
         return captureReportNode(card, captureScale).catch(function (e) {
           if (captureScale > 1) {
-            captureScale = captureScale > 1.5 ? 1.25 : 1;
+            captureScale = captureScale >= 3 ? 2.5 : (captureScale >= 2 ? 2 : (captureScale > 1.25 ? 1.25 : 1));
             console.warn("Reintento de captura con escala " + captureScale, e);
             return capture();
           }
@@ -13603,7 +13606,7 @@ var ReportKit = (function () {
       function capture() {
         return captureReportNode(card, captureScale).catch(function (e) {
           if (captureScale > 1) {
-            captureScale = captureScale > 1.5 ? 1.25 : 1;
+            captureScale = captureScale >= 3 ? 2.5 : (captureScale >= 2 ? 2 : (captureScale > 1.25 ? 1.25 : 1));
             console.warn("Reintento de captura con escala " + captureScale, e);
             return capture();
           }
@@ -14084,10 +14087,79 @@ var ReportKit = (function () {
       var REPORT_LOGO_LEFT_SRC = "logo1.png.png";
       var REPORT_LOGO_RIGHT_SRC = "logo2.png.png";
 
+      /* Icono lineal grande del pronóstico hoy: trazo único #B4D445 (mismo color que el título). */
+      function iconoLineaPronostico(codigo, size) {
+        var cod = Number(codigo);
+        size = size || 160;
+        var stroke = "#B4D445";
+        var sw = 2.6;
+        function svg(body) {
+          return '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size +
+            '" viewBox="0 0 64 64" fill="none" stroke="' + stroke + '" stroke-width="' + sw +
+            '" stroke-linecap="round" stroke-linejoin="round" style="width:' + size +
+            'px;height:' + size + 'px;display:block;flex-shrink:0;">' + body + '</svg>';
+        }
+        function rays(cx, cy, r) {
+          var out = "", i, a;
+          for (i = 0; i < 8; i++) {
+            a = -Math.PI / 2 + i * Math.PI / 4;
+            out += '<line x1="' + (cx + Math.cos(a) * (r + 5)).toFixed(1) +
+              '" y1="' + (cy + Math.sin(a) * (r + 5)).toFixed(1) +
+              '" x2="' + (cx + Math.cos(a) * (r + 11)).toFixed(1) +
+              '" y2="' + (cy + Math.sin(a) * (r + 11)).toFixed(1) + '"/>';
+          }
+          return out;
+        }
+        /* Nube Material Design (forma estándar reconocible: 3 bultos + base). */
+        var cloud = '<path d="M49.6 33.1c-1.6-7.9-8.5-13.8-16.9-13.8-6.7 0-12.4 3.8-15.3 9.3C10.5 29.3 5.1 35.2 5.1 42.3c0 7.6 6.2 13.8 13.8 13.8h29.9c6.3 0 11.5-5.2 11.5-11.5 0-6.1-4.7-11-10.7-11.5z"/>';
+        var cloudSm = '<path d="M46.5 36.2c-1.3-6.5-7-11.3-13.9-11.3-5.5 0-10.2 3.1-12.6 7.6C14.5 33.1 10 37.9 10 43.8c0 6.3 5.1 11.3 11.3 11.3h24.6c5.2 0 9.4-4.2 9.4-9.4 0-5-3.9-9.1-8.8-9.5z"/>';
+        /* 0 despejado · 1 mayormente despejado · 2 parcial · 3 nublado · 45/48 niebla ·
+           51-55 llovizna · 61-67 lluvia · 80-82 chubascos · 95-99 tormenta */
+        if (cod === 0) {
+          return svg('<circle cx="32" cy="32" r="11"/>' + rays(32, 32, 11));
+        }
+        if (cod === 1) {
+          return svg('<circle cx="42" cy="18" r="7.5"/>' + rays(42, 18, 7.5) + cloudSm);
+        }
+        if (cod === 2) {
+          return svg('<circle cx="44" cy="16" r="6.5"/>' + rays(44, 16, 6.5) + cloudSm);
+        }
+        if (cod === 3) {
+          return svg(cloud);
+        }
+        if (cod === 45 || cod === 48) {
+          return svg('<line x1="14" y1="26" x2="50" y2="26"/><line x1="18" y1="34" x2="46" y2="34"/><line x1="14" y1="42" x2="50" y2="42"/>');
+        }
+        if (cod === 51 || cod === 53 || cod === 55 || cod === 56 || cod === 57) {
+          return svg(cloud +
+            '<line x1="24" y1="46" x2="24" y2="52"/><line x1="32" y1="48" x2="32" y2="54"/><line x1="40" y1="46" x2="40" y2="52"/>');
+        }
+        if (cod === 61 || cod === 63 || cod === 65 || cod === 66 || cod === 67) {
+          return svg(cloud +
+            '<line x1="22" y1="46" x2="20" y2="54"/><line x1="32" y1="46" x2="30" y2="54"/><line x1="42" y1="46" x2="40" y2="54"/>');
+        }
+        if (cod === 80 || cod === 81 || cod === 82) {
+          return svg(cloud +
+            '<line x1="20" y1="45" x2="17" y2="55"/><line x1="28" y1="45" x2="25" y2="55"/><line x1="36" y1="45" x2="33" y2="55"/><line x1="44" y1="45" x2="41" y2="55"/>');
+        }
+        if (cod === 95 || cod === 96 || cod === 99) {
+          return svg(cloud +
+            '<path d="M34 42 26 52h7l-3 10 14-16h-8l4-4Z" fill="' + stroke + '" stroke="' + stroke + '"/>');
+        }
+        /* nieve u otros: nube genérica */
+        if ((cod >= 71 && cod <= 77) || cod === 85 || cod === 86) {
+          return svg(cloud +
+            '<line x1="24" y1="48" x2="24" y2="48"/><circle cx="24" cy="50" r="1.6" fill="' + stroke + '" stroke="none"/>' +
+            '<circle cx="32" cy="52" r="1.6" fill="' + stroke + '" stroke="none"/>' +
+            '<circle cx="40" cy="50" r="1.6" fill="' + stroke + '" stroke="none"/>');
+        }
+        return svg(cloud);
+      }
+
       /* Iconos propios: SVG vectoriales en línea (no dependen de internet) */
       /* El pronóstico principal siempre muestra el símbolo diurno porque el
          período del reporte inicia a las 06:00, aunque se genere de noche. */
-      var icoForecast = iconoClimaInstitucional(codeToday, true, 126);
+      var icoForecast = iconoLineaPronostico(codeToday, 168);
       var icoM = iconoClimaInstitucional(morning.code, true, 90);
       var icoA = iconoClimaInstitucional(afternoon.code, true, 90);
       var icoN = iconoClimaInstitucional(night.code, false, 90);
@@ -14174,16 +14246,17 @@ var ReportKit = (function () {
         '<div style="font-size:22px;color:#cfe3d6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;">' + dateLong + "</div>" +
         '<div style="font-size:20px;color:#B4D445;font-weight:700;letter-spacing:.03em;white-space:nowrap;text-align:right;flex-shrink:0;">' + String(place).toUpperCase() + "</div></div>" +
 
-        /* Pronóstico */
-        '<div style="position:absolute;top:600px;left:0;right:0;height:290px;border:1px solid rgba(180,212,69,.35);border-radius:28px;background:rgba(8,31,26,.72);padding:36px 46px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:28px;">' +
+        /* Pronóstico: icono lineal lima a la izquierda + texto + temperatura */
+        '<div style="position:absolute;top:600px;left:0;right:0;height:290px;border:1px solid rgba(180,212,69,.35);border-radius:28px;background:rgba(8,31,26,.72);padding:28px 36px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:22px;">' +
+        '<div style="flex:0 0 auto;display:flex;align-items:center;justify-content:center;min-width:168px;">' + icoForecast + '</div>' +
         '<div style="flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;">' +
         '<div style="font-size:18px;letter-spacing:.24em;color:#B4D445;font-weight:700;line-height:1.2;">PRONÓSTICO HOY</div>' +
-        '<div style="font-size:76px;font-weight:800;color:#fff;margin-top:14px;line-height:1;">' + cond + "</div>" +
-        '<div style="margin-top:32px;font-size:26px;color:#cfe3d6;">Sensación <b style="color:#f5b24a;">' +
+        '<div style="font-size:68px;font-weight:800;color:#fff;margin-top:12px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + cond + "</div>" +
+        '<div style="margin-top:28px;font-size:24px;color:#cfe3d6;">Sensación <b style="color:#f5b24a;">' +
         (feelsMax != null ? feelsMax + "°C" : "--") + " / " + (feelsMin != null ? feelsMin + "°C" : "--") + "</b></div></div>" +
-        '<div style="flex:0 0 40%;min-width:0;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;transform:translateX(64px);"><div style="font-size:150px;font-weight:800;line-height:.9;color:#fff;letter-spacing:-.03em;">' +
-        (maxT != null ? maxT : "--") + '<sup style="font-size:60px;vertical-align:top;position:relative;top:14px;">°</sup></div>' +
-        '<div style="margin-top:18px;font-size:34px;color:#9fd0b5;font-weight:600;">Mín <span style="color:#6fb3ff;">' + minStr + "</span></div></div></div>" +
+        '<div style="flex:0 0 34%;min-width:0;text-align:center;display:flex;flex-direction:column;justify-content:center;align-items:center;"><div style="font-size:140px;font-weight:800;line-height:.9;color:#fff;letter-spacing:-.03em;">' +
+        (maxT != null ? maxT : "--") + '<sup style="font-size:54px;vertical-align:top;position:relative;top:12px;">°</sup></div>' +
+        '<div style="margin-top:16px;font-size:32px;color:#9fd0b5;font-weight:600;">Mín <span style="color:#6fb3ff;">' + minStr + "</span></div></div></div>" +
 
         /* Métricas */
         '<div style="position:absolute;top:930px;left:0;right:0;display:grid;grid-template-columns:repeat(4,1fr);gap:16px;">' +
@@ -14276,7 +14349,7 @@ var ReportKit = (function () {
       function capturar() {
         return captureReportNode(card, captureScale).catch(function (e) {
           if (captureScale > 1) {
-            captureScale = captureScale > 1.5 ? 1.25 : 1;
+            captureScale = captureScale >= 3 ? 2.5 : (captureScale >= 2 ? 2 : (captureScale > 1.25 ? 1.25 : 1));
             console.warn("Reintento de captura con escala " + captureScale, e);
             return capturar();
           }
